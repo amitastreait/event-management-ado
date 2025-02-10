@@ -20,56 +20,28 @@ stages:
     jobs:
     - job: FetchPRDetails
       steps:
-      
-      # Fetch PR Details using InvokeRESTAPI
-      - task: InvokeRESTAPI@1
-        displayName: "Fetch PR Details"
-        inputs:
-          connectionType: 'ConnectedServiceName'
-          serviceConnection: 'AzureDevOpsServiceConnection'  # Replace with your service connection name
-          method: 'GET'
-          urlSuffix: '/_apis/git/repositories/$(Build.Repository.Name)/pullrequests/$(System.PullRequest.PullRequestId)?api-version=7.1-preview.1'
-          waitForCompletion: "true"
+      - powershell: |
+          $prId = $env:SYSTEM_PULLREQUEST_PULLREQUESTID
+          $project = $env:SYSTEM_TEAMPROJECT
+          $repoId = $env:BUILD_REPOSITORY_ID
+          $organization = "pantherschools"  # Replace with your organization name
+          $uri = "https://dev.azure.com/$organization/$project/_apis/git/repositories/$repoId/pullRequests/$prId?api-version=7.1-preview.1"
+          
+          $response = Invoke-RestMethod -Uri $uri -Headers @{Authorization = "Bearer $env:SYSTEM_ACCESSTOKEN"}
+          $prBody = $response.description
+          
+          # Save PR body to a file
+          $filePath = "$(Build.ArtifactStagingDirectory)/PR_Body.txt"
+          $prBody | Out-File -FilePath $filePath -Encoding utf8
+          Write-Host "##vso[task.setvariable variable=PR_BODY_FILE]$filePath"
         env:
-          AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
-        continueOnError: false
-
-      # Save PR Body to a File
-      - task: PowerShell@2
-        displayName: "Save PR Body to File"
-        inputs:
-          targetType: 'inline'
-          script: |
-            $response = "$(InvokeRESTAPI.responseBody)"
-            $json = $response | ConvertFrom-Json
-            $prBody = $json.description
-            $filePath = "$(Build.ArtifactStagingDirectory)/PR_Body.txt"
-            $prBody | Out-File -FilePath $filePath -Encoding utf8
-            Write-Host "##vso[task.setvariable variable=PR_BODY_FILE]$filePath"
-            Write-Host "PR Body saved to: $filePath"
-
-      # Publish File as an Artifact (Optional)
-      - task: PublishBuildArtifacts@1
-        displayName: "Publish PR Body File"
-        inputs:
-          pathToPublish: "$(Build.ArtifactStagingDirectory)/PR_Body.txt"
-          artifactName: "PRDetails"
-
-      # Read and Print PR Body in the Next Step
-      - task: PowerShell@2
-        displayName: "Read & Print PR Body"
-        inputs:
-          targetType: 'inline'
-          script: |
-            $filePath = "$(PR_BODY_FILE)"
-            if (Test-Path $filePath) {
-                $prBody = Get-Content -Path $filePath -Raw
-                Write-Host "Pull Request Body:"
-                Write-Host "---------------------"
-                Write-Host $prBody
-            } else {
-                Write-Host "PR Body file not found."
-            }
+          SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+        displayName: "Fetch and Save PR Body"
+      - script: |
+          # Display the PR body
+          echo "Pull Request Body:"
+          cat $(PR_BODY_FILE)
+        displayName: "Display PR Body"
 
   - stage: SFDeployANDValidate
     jobs:
