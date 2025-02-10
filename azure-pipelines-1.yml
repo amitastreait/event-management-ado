@@ -21,24 +21,39 @@ stages:
     - job: FetchPRDetails
       steps:
       - powershell: |
-          $prId = $env:SYSTEM_PULLREQUEST_PULLREQUESTID
+          $organization = "pantherschools"   # Replace with your org name
           $project = $env:SYSTEM_TEAMPROJECT
           $repoId = $env:BUILD_REPOSITORY_ID
-          $organization = "pantherschools"  # Replace with your organization name
-          $uri = "https://dev.azure.com/$organization/$project/_apis/git/repositories/$repoId/pullRequests/$prId?api-version=7.1-preview.1"
-          
-          $response = Invoke-RestMethod -Uri $uri -Headers @{Authorization = "Bearer $env:SYSTEM_ACCESSTOKEN"}
+          $prId = $env:SYSTEM_PULLREQUEST_PULLREQUESTID
+
+          Write-Host "PR ID: $prId"
+          Write-Host "Project: $project"
+          Write-Host "Repository ID: $repoId"
+
+          if (-not $prId) {
+            Write-Error "PR ID is empty. Make sure this is running in a PR pipeline."
+            exit 1
+          }
+
+          $uri = "https://dev.azure.com/$organization/$project/_apis/git/pullrequests/$prId?api-version=7.1-preview.1"
+
+          $headers = @{
+            Authorization = "Bearer $env:SYSTEM_ACCESSTOKEN"
+            "Content-Type" = "application/json"
+          }
+
+          $response = Invoke-RestMethod -Uri $uri -Headers $headers -Method Get
           $prBody = $response.description
-          
-          # Save PR body to a file
+
           $filePath = "$(Build.ArtifactStagingDirectory)/PR_Body.txt"
           $prBody | Out-File -FilePath $filePath -Encoding utf8
+
           Write-Host "##vso[task.setvariable variable=PR_BODY_FILE]$filePath"
         env:
           SYSTEM_ACCESSTOKEN: $(System.AccessToken)
         displayName: "Fetch and Save PR Body"
+
       - script: |
-          # Display the PR body
           echo "Pull Request Body:"
           cat $(PR_BODY_FILE)
         displayName: "Display PR Body"
