@@ -20,6 +20,8 @@ stages:
     jobs:
     - job: FetchPRDetails
       steps:
+      - script: echo "##vso[task.setvariable variable=SYSTEM_ACCESSTOKEN]$(System.AccessToken)"
+        displayName: "Set OAuth Token Variable"
       - powershell: |
           $organization = "pantherschools"   # Replace with your org name
           $project = $env:SYSTEM_TEAMPROJECT
