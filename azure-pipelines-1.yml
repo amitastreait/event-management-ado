@@ -34,7 +34,7 @@ stages:
             Write-Error "PR ID is empty. Make sure this is running in a PR pipeline."
             exit 1
           }
-
+          # This is a test comment
           $uri = "https://dev.azure.com/$organization/$project/_apis/git/pullrequests/$prId?api-version=7.1-preview.1"
 
           $headers = @{
