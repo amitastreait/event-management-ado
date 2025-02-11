@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>RelatedRecord__c</fullName>
+    <externalId>false</externalId>
+    <formula>IF(
+  AND( ParentId__c &lt;&gt; null, ParentName__c &lt;&gt; null ),
+  HYPERLINK(&quot;/lightning/r/ErrorLog__c/&quot;&amp;ParentId__c&amp;&quot;/view&quot;, ParentName__c, &quot;_self&quot;),
+  IF(
+    ParentId__c &lt;&gt; null,
+    HYPERLINK(&quot;/lightning/r/ErrorLog__c/&quot;&amp;ParentId__c&amp;&quot;/view&quot;, ParentName__c, &quot;_self&quot;),
+    &quot;&quot;
+  )
+)</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <label>Related Record</label>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>GrandTotal__c</fullName>
+    <inlineHelpText>The final amount of the Invoice</inlineHelpText>
+    <label>Grand Total</label>
+    <summarizedField>InvoiceLine__c.GrandTotal__c</summarizedField>
+    <summaryForeignKey>InvoiceLine__c.Invoice__c</summaryForeignKey>
+    <summaryOperation>sum</summaryOperation>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Summary</type>
+</CustomField>

@@ -1,0 +1,13 @@
+.container {
+    position: relative;
+    height: 100vh;
+    padding: 10px;
+}
+.bottom-center-button {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    text-align: center;
+}

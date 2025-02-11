@@ -1,0 +1,24 @@
+<!--
+  @description       : 
+  @author            : Amit Singh
+  @group             : 
+  @last modified on  : 12-18-2024
+  @last modified by  : Amit Singh
+-->
+<template>
+    <lightning-card variant="Narrow" title="DataTable Demo" icon-name="Standard:contact">
+        <div class="Slds-p-around_large">
+            <lightning-datatable
+                key-field="id"
+                data={contactData}
+                show-row-number-column
+                hide-checkbox-column
+                onrowaction={handleRowAction}
+                columns={coulumList}>
+            </lightning-datatable>
+        </div>
+        <div slot="footer">
+            <lightning-badge label="Datatable"></lightning-badge>
+        </div>
+    </lightning-card>
+</template>

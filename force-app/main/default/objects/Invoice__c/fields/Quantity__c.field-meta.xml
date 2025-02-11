@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Quantity__c</fullName>
+    <inlineHelpText>Total quantity for the Invoice including the tax &amp; discount products</inlineHelpText>
+    <label>Quantity</label>
+    <summarizedField>InvoiceLine__c.Quantity__c</summarizedField>
+    <summaryForeignKey>InvoiceLine__c.Invoice__c</summaryForeignKey>
+    <summaryOperation>sum</summaryOperation>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Summary</type>
+</CustomField>
