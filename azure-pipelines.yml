@@ -26,10 +26,12 @@ stages:
           - script: echo "SFBuild is running"
             displayName: Single Line Script
           - script: |
-              echo echo $(SF_ALIAS)
-              echo echo $(SF_CLIENT_ID)
-              echo echo $(SF_INSTANCE_URL)
-              echo echo $(SF_USER_NAME)
+              echo $(SF_ALIAS)
+              echo $(SF_CLIENT_ID)
+              echo $(SF_INSTANCE_URL)
+              echo $(SF_USER_NAME)
+              echo $(System.DefaultWorkingDirectory)
+              echo $(System.ArtifactStagingDirectory)
             displayName: MultiLine Script
   - stage: SFDeployANDValidate
     jobs:
@@ -56,8 +58,34 @@ stages:
               sf org login jwt --jwt-key-file $(commonSecureFile.secureFilePath) --username $(SF_USER_NAME) --client-id $(SF_CLIENT_ID) --set-default --alias $(SF_ALIAS) --instance-url $(SF_INSTANCE_URL)
             displayName: Authenticate with Salesforce
           - script: |
-              sf apex run test --target-org $(SF_ALIAS) --test-level RunLocalTests --code-coverage --result-format humat -d ./ --wait 10
+              sf apex run test --target-org $(SF_ALIAS) --test-level RunLocalTests --code-coverage --result-format human -d ./ --wait 10
             displayName: Run Local Tests
+          # Salesforce Code analyzer
+          - script: |
+              mkdir scanner_reports
+              sf scanner run --format html --target "force-app/main/default" --engine eslint,eslint-lwc,eslint-typescript,pmd,retire-js,cpd --category Design,Best Practices,Code Style,Performance,Security --outfile scanner_reports
+            displayName: Run Salesforce Code analyzer
+          # upload as an artifacts
+
+          #1 Build Artifacts
+          - task: PublishBuildArtifacts@1
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+              ArtifactName: 'My First Pipeline'
+              publishLocation: 'Container'
+              StoreAsTar: true
+            displayName: Publish Build Artifacts
+          #2 Pipeline Artifacts
+          - task: PublishPipelineArtifact@1
+            inputs:
+              targetPath: '$(System.DefaultWorkingDirectory)/scanner_reports'
+              artifact: 'SF_CLI_REPORTS'
+              publishLocation: 'pipeline'
+            displayName: Publish SF CLI Scanner Reports
+
+          - script: |
+              sf project deploy start --target-org $(SF_ALIAS) --source-dir force-ap --dry-run
+            displayName: Validate the changes
       - job: SFDeploy
         steps:
           - script: echo "SFBuild is running"
