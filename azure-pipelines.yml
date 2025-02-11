@@ -3,11 +3,20 @@
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
 
-trigger:
-- main
+trigger: # equalant to push in Github action
+- feature/azure-pipelines
+- feature/*
+
+# Pull Request Trigger
+pr: none
 
 pool:
   vmImage: ubuntu-latest
+
+variables:
+  - group: uat
+  - name: TEST_CLASS_LEVEL
+    value: AccountTriggerTest
 
 stages:
   - stage: SFBuild
@@ -17,13 +26,18 @@ stages:
           - script: echo "SFBuild is running"
             displayName: Single Line Script
           - script: |
-              echo "Multiple line 1"
-              echo "Multiple line 2"
+              echo echo $(SF_ALIAS)
+              echo echo $(SF_CLIENT_ID)
+              echo echo $(SF_INSTANCE_URL)
+              echo echo $(SF_USER_NAME)
             displayName: MultiLine Script
   - stage: SFDeployANDValidate
     jobs:
       - job: SFValidate
         steps:
+          - checkout: self
+            fetchDepth: 0
+            displayName: Checkout to correct commit
           - script: npm install -g @salesforce/cli
             displayName: Install Salesforce CI
           - script: sf --version
@@ -32,6 +46,18 @@ stages:
               echo 'y' | sf plugins install sfdx-git-delta
               sf plugins install @salesforce/sfdx-scanner
             displayName: Install Required Plugins
+          # Download the Secure File
+          - task: DownloadSecureFile@1
+            name: commonSecureFile
+            displayName: Download Secure File
+            inputs:
+              secureFile: 'server-uat.key' # Name of the secure file
+          - script: |
+              sf org login jwt --jwt-key-file $(commonSecureFile.secureFilePath) --username $(SF_USER_NAME) --client-id $(SF_CLIENT_ID) --set-default --alias $(SF_ALIAS) --instance-url $(SF_INSTANCE_URL)
+            displayName: Authenticate with Salesforce
+          - script: |
+              sf apex run test --target-org $(SF_ALIAS) --test-level RunLocalTests --code-coverage --result-format humat -d ./ --wait 10
+            displayName: Run Local Tests
       - job: SFDeploy
         steps:
           - script: echo "SFBuild is running"
