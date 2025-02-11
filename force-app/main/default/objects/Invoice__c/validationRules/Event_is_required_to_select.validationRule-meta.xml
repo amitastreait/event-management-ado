@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Event_is_required_to_select</fullName>
+    <active>true</active>
+    <description>Event is required to select in order to create the record.</description>
+    <errorConditionFormula>ISBLANK(Event__c)</errorConditionFormula>
+    <errorDisplayField>Event__c</errorDisplayField>
+    <errorMessage>Event is required to select in order to create the record.</errorMessage>
+</ValidationRule>

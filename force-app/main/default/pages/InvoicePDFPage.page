@@ -1,0 +1,84 @@
+<apex:page renderAs="pdf" controller="InvoiceController" showHeader="false" applyBodyTag="false">
+    <style>
+        @page {
+            size: letter;
+            margin: 25mm;
+            @top-center {
+                content: "Sample";
+            }
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+            }
+        }
+        .page-break {
+            display:block;
+            page-break-after:always;
+        }
+        body {
+            font-family: Arial Unicode MS;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px;
+            border-bottom: 2px solid #0070d2;
+            background-color: #ffffff;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #0070d2;
+            margin: 0;
+        }
+
+        .header p {
+            font-size: 14px;
+            color: #555;
+            margin: 5px 0;
+        }
+
+        .invoice-info {
+            margin: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .invoice-info p {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+    </style>
+
+    <!-- Header Section -->
+    <div class="header">
+        <h1>Invoice</h1>
+        <p>Invoice ID: {!invoice.Name}</p>
+    </div>
+
+    <!-- Invoice Information -->
+    <div class="invoice-info">
+        <p><strong>Event:</strong> {!invoice.Event__c}</p>
+        <p><strong>Description:</strong> {!invoice.Description__c}</p>
+        <p><strong>Sponsor:</strong> {!invoice.Sponsor__c}</p>
+        <p><strong>Invoice Date:</strong> <apex:outputText value="{0,date,dd/MM/yyyy}">{!invoice.InvoiceDate__c}</apex:outputText></p>
+        <p><strong>Due Date:</strong> <apex:outputText value="{0,date,dd/MM/yyyy}">{!invoice.DueDate__c}</apex:outputText></p>
+        <p><strong>Status:</strong> {!invoice.Status__c}</p>
+        <p><strong>Total:</strong> <apex:outputText value="₹{0, number, 000,000.00}">
+            <apex:param value="{!invoice.GrandTotal__c}" />
+        </apex:outputText></p>
+        <p><strong>Discount Amount:</strong>
+        <apex:outputText value="₹{0, number, 000,000.00}">
+            ₹
+            <apex:param value="{!invoice.Discount_Amount__c}" />
+        </apex:outputText></p>
+        <p><strong>Tax Amount:</strong>
+            <apex:outputText value="₹{0, number, 000,000.00}">
+                <apex:param value="{!invoice.TaxAmount__c}" />
+            </apex:outputText>
+        </p>
+    </div>
+
+</apex:page>

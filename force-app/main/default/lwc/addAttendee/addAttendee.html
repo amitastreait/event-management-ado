@@ -1,0 +1,37 @@
+<!--
+  @description       : 
+  @author            : Amit Singh
+  @group             : 
+  @last modified on  : 01-05-2025
+  @last modified by  : Amit Singh
+-->
+<template>
+    <lightning-spinner 
+      alternative-text="Loading" 
+      size="xx-small"
+      variant="brand"
+      if:true={isLoading}
+    ></lightning-spinner>
+    <lightning-card title="Add Attendee" icon-name="custom:custom63">
+        <div class=" slds-m-around_large form-container">
+            <lightning-input label="Name" value={attendee.name} required onchange={handleInputChange} name="name" ></lightning-input>
+            <lightning-input type="email" label="Email" value={attendee.email} required onchange={handleInputChange} name="email"></lightning-input>
+            <lightning-input type="tel" label="Phone" value={attendee.phone} required onchange={handleInputChange} name="phone"></lightning-input>
+            <lightning-input label="Job Title" value={attendee.jobTitle} required onchange={handleInputChange} name="jobTitle"></lightning-input>
+            <lightning-input label="Company" value={attendee.companyName} required onchange={handleInputChange} name="companyName"></lightning-input>
+            <lightning-combobox
+                label="T-shirt Size"
+                name="tshirtSize"
+                value={attendee.tshirtSize}
+                placeholder="Select a size"
+                options={tshirtOptions}
+                onchange={handleInputChange}
+                required>
+            </lightning-combobox>
+            <div class="button-container">
+                <lightning-button label="Generate Random" variant="brand" onclick={handleGenerateCandidate}></lightning-button>
+                <lightning-button label="Submit" variant="brand" onclick={handleSubmit}></lightning-button>
+            </div>
+        </div>
+    </lightning-card>
+</template>

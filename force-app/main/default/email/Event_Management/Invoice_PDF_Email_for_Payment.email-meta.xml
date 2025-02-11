@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<EmailTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>62.0</apiVersion>
+    <available>true</available>
+    <encodingKey>UTF-8</encodingKey>
+    <name>Invoice PDF Email for Payment</name>
+    <style>none</style>
+    <subject>Invoice #[{!Invoice__c.Name}] from [{!Invoice__c.Event__r.Name}] - Due [{!Invoice__c.DueDate__c}]</subject>
+    <type>visualforce</type>
+    <uiType>Aloha</uiType>
+</EmailTemplate>
