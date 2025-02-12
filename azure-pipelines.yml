@@ -70,15 +70,11 @@ stages:
           - script: |
               if ! command -v sfdx &> /dev/null; then
                 echo "Salesforce CLI not found, installing..."
-                npm install --global sfdx-cli
+                npm install -g @salesforce/cli
               else
                 echo "Salesforce CLI is already installed"
               fi
             displayName: Install Salesforce CLI if not cached
-
-          - script: |
-              sf --version
-            displayName: Verify Salesforce CLI Installation
 
           #- script: npm install -g @salesforce/cli
           #  displayName: Install Salesforce CI
