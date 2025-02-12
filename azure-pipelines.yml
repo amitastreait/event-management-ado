@@ -74,10 +74,9 @@ stages:
           # Salesforce Code analyzer
           - script: |
               mkdir scanner_reports
-              sf scanner run --format html --target "force-app/main/default" --engine eslint,eslint-lwc,eslint-typescript,pmd,retire-js,cpd --category Design,Best Practices,Code Style,Performance,Security --outfile scanner_reports
+              sf scanner run --format html --target "force-app/main/default" --engine eslint,eslint-lwc,eslint-typescript,pmd,retire-js,cpd --category Design,Best Practices,Code Style,Performance,Security --outfile scanner_reports/scan_reports.html
             displayName: Run Salesforce Code analyzer
           # upload as an artifacts
-
           #1 Build Artifacts
           - task: PublishBuildArtifacts@1
             inputs:
