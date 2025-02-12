@@ -4,11 +4,22 @@
 # https://aka.ms/yaml
 
 trigger: # equalant to push in Github action
-- feature/azure-pipelines
-- feature/*
+  branches:
+    include: # ENUM
+      - feature/*
+  paths:
+    include:
+      - force-app/*
 
 # Pull Request Trigger
-pr: none
+pr: 
+ branches:
+   include:
+     - uat
+ paths:
+   include:
+     - force-app/*
+    
 
 pool:
   vmImage: ubuntu-latest
