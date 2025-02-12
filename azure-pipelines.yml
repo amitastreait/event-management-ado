@@ -94,6 +94,26 @@ stages:
               publishLocation: 'pipeline'
             displayName: Publish SF CLI Scanner Reports
 
+          # Generate the Delta for Delta Deployment
+          - script: |
+              mkdir delta
+              # Generate Delta for deployment
+              # https://github.com/scolladon/sfdx-git-delta
+              sf sgd source delta --to "HEAD" --from "HEAD~1" --output-dir ./delta --generate-delta --ignore-whitespace --ignore-file .sgdignore
+              cat ./delta/package/package.xml
+              cat ./delta/destructiveChanges/destructiveChanges.xml
+              ls -l ./delta
+            displayName: Generate Delta for the Deployment
+          
+          - script: |
+              if grep -q '<types>' delta/destructiveChanges/destructiveChanges.xml ; then
+                echo "---- Validate Pre-Destructive Changes in Salesforce ----"
+                sf project deploy start --target-org $(SF_ALIAS) --pre-destructive-changes delta/destructiveChanges/destructiveChanges.xml --manifest delta/destructiveChanges/package.xml --dry-run --wait 15
+              else
+                echo "---- No changes to validate ----"
+              fi
+            displayName: Validate Pre-Destructive Changes in Salesforce
+
           - script: |
               sf project deploy start --target-org $(SF_ALIAS) --source-dir force-ap --dry-run
             displayName: Validate the changes
