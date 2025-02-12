@@ -114,7 +114,7 @@ stages:
             displayName: Validate Pre-Destructive Changes in Salesforce
 
           - script: |
-              sf project deploy start --target-org $(SF_ALIAS) --source-dir force-ap --dry-run
+              sf project deploy start --target-org $(SF_ALIAS) --source-dir force-app --dry-run
             displayName: Validate the changes
       - job: SFDeploy
         steps:
