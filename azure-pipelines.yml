@@ -77,17 +77,21 @@ stages:
             displayName: Install Salesforce CLI if not cached
 
           - script: |
-              sfdx --version
-              sfdx plugins --core
+              sf --version
             displayName: Verify Salesforce CLI Installation
 
-          - script: npm install -g @salesforce/cli
-            displayName: Install Salesforce CI
+          #- script: npm install -g @salesforce/cli
+          #  displayName: Install Salesforce CI
+
           - script: sf --version
             displayName: Verify CLI Installation 
           - script: |
-              echo 'y' | sf plugins install sfdx-git-delta
-              sf plugins install @salesforce/sfdx-scanner
+              if ! command -v sfdx &> /dev/null; then
+                echo 'y' | sf plugins install sfdx-git-delta
+                sf plugins install @salesforce/sfdx-scanner
+              else
+                echo "Salesforce CLI is already installed"
+              fi
             displayName: Install Required Plugins
           # Download the Secure File
           - task: DownloadSecureFile@1
