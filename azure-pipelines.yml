@@ -10,6 +10,7 @@ trigger: # equalant to push in Github action
   paths:
     include:
       - force-app/*
+      - azure-pipelines.yml
 
 # Pull Request Trigger
 pr: 
@@ -50,6 +51,36 @@ stages:
           - checkout: self
             fetchDepth: 0
             displayName: Checkout to correct commit
+          - task: Cache@2
+            inputs:
+              key: 'sfdx | "$(Agent.OS)"'
+              path: |
+                ~/.npm-global
+                ~/.npm
+                ~/.sf
+                ~/.sfdx
+                ~/node_modules
+                ~/node_modules/@salesforce
+                ~/bin/sf
+                ~/.local/share/sf
+              restoreKeys: |
+                sfdx | "$(Agent.OS)"
+            displayName: Cache Salesforce CLI and npm dependencies
+
+          - script: |
+              if ! command -v sfdx &> /dev/null; then
+                echo "Salesforce CLI not found, installing..."
+                npm install --global sfdx-cli
+              else
+                echo "Salesforce CLI is already installed"
+              fi
+            displayName: Install Salesforce CLI if not cached
+
+          - script: |
+              sfdx --version
+              sfdx plugins --core
+            displayName: Verify Salesforce CLI Installation
+
           - script: npm install -g @salesforce/cli
             displayName: Install Salesforce CI
           - script: sf --version
