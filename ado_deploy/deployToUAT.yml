@@ -20,7 +20,7 @@ stages:
   - stage: SFDeployANDValidate
     jobs:
       - job: SFDeployANDValidate
-      - template: ado_templates/template.yml
+      - template: ../ado_templates/template.yml
         parameters:
           SF_USER_NAME: $(SF_USER_NAME)
           SF_ALIAS: $(SF_ALIAS)
