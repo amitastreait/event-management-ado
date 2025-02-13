@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">
+    <labels>
+        <fullName>WelcomeMessage</fullName>
+        <language>en_US</language>
+        <protected>true</protected>
+        <shortDescription>WelcomeMessage</shortDescription>
+        <value>In our perfect ways. In the ways we are beautiful. In the ways we are human. We are here. Happy New Year’s. Let’s make it ours. Beyoncé</value>
+    </labels>
+</CustomLabels>

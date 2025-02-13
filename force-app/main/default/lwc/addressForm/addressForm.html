@@ -1,0 +1,25 @@
+<!--
+  @description       : 
+  @author            : Amit Singh
+  @group             : 
+  @last modified on  : 01-05-2025
+  @last modified by  : Amit Singh
+-->
+<template>
+    <lightning-spinner alternative-text="Loading" size="small" variant="brand" if:true={isLoading} ></lightning-spinner>
+    <lightning-card icon-name="standard:address" title="Random Address" variant="base">
+        <div class="slds-m-around_medium">
+            <lightning-button label="Update Random Address" onclick={handleGenerateAddress}></lightning-button>
+            <div class="address-details">
+                <lightning-record-form
+                    record-id={recordId}
+                    object-api-name="Venue__c"
+                    mode="readonly"
+                    fields={fields}
+                    columns="2"
+                >
+                </lightning-record-form>
+            </div>
+        </div>
+    </lightning-card>
+</template>
