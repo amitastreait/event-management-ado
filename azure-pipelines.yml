@@ -3,23 +3,23 @@
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
 
-trigger: # equalant to push in Github action
-  branches:
-    include: # ENUM
-      - feature/*
-  paths:
-    include:
-      - force-app/*
-      - azure-pipelines.yml
+#trigger: # equalant to push in Github action
+#  branches:
+#    include: # ENUM
+#      - feature/*
+#  paths:
+#    include:
+#      - force-app/*
+#      - azure-pipelines.yml
 
 # Pull Request Trigger
-pr: 
- branches:
-   include:
-     - uat
- paths:
-   include:
-     - force-app/*
+#pr: 
+# branches:
+#   include:
+#     - uat
+# paths:
+#   include:
+#     - force-app/*
 
 pool:
   vmImage: ubuntu-latest
