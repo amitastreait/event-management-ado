@@ -19,6 +19,8 @@ variables:
   - group: uat
   - name: TEST_CLASS_LEVEL
     value: AccountTriggerTest
+  - name: npm_config_cache
+    value: $(Pipeline.Workspace)/.npm
 
 stages:
   - stage: SFBuild
@@ -46,18 +48,10 @@ stages:
           - task: Cache@2
             inputs:
               cacheHitVar: CACHE_RESTORED
-              key: sf-cli
-              path: |
-                ~/.npm-global
-                ~/.npm
-                ~/.sf
-                ~/.sfdx
-                ~/node_modules
-                ~/node_modules/@salesforce
-                ~/bin/sf
-                ~/.local/share/sf
+              key: 'npm | "$(Agent.OS)" | package-lock.json'
+              path: $(npm_config_cache)
               restoreKeys: |
-                sf-cli
+                npm | "$(Agent.OS)"
             displayName: Cache Salesforce CLI
 
           - script: |
