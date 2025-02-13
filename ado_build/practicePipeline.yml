@@ -42,15 +42,10 @@ stages:
           - checkout: self
             fetchDepth: 0
             displayName: Checkout to correct commit
-          - script: |
-              ## Set npm's global install directory to a user-writable path
-              npm config set prefix ~/.npm-global
-              echo "$HOME/.npm-global/bin" >> $GITHUB_PATH
-            displayName: Configure npm Global Directory
             
           - task: Cache@2
             inputs:
-              key: 'sf-cli | "$(Agent.OS)" | ${{ hashFiles("**/package.json") }}'
+              key: 'sf-cli | ccache | "$(Agent.OS)" | $(Build.SourceVersion)'
               path: |
                 ~/.npm-global
                 ~/.npm
@@ -63,28 +58,15 @@ stages:
               restoreKeys: |
                 sf-cli | "$(Agent.OS)"
             displayName: Cache Salesforce CLI
+            cacheHitVar: CACHE_RESTORED   
 
           - script: |
-              if ! command -v sf &> /dev/null; then
-                echo "Salesforce CLI not found, installing..."
-                npm install -g @salesforce/cli
-              else
-                echo "Salesforce CLI is already installed from cache."
-              fi
-            condition: ne(variables['CacheRestored'], 'true')
+              npm install -g @salesforce/cli
+              echo 'y' | sf plugins install sfdx-git-delta
+              sf plugins install @salesforce/sfdx-scanner
+            condition: and(not(canceled()), eq(variables.CACHE_RESTORED, 'true'))
             displayName: Install Salesforce CLI (if not cached)
 
-          - script: sf --version
-            displayName: Verify CLI Installation 
-          - script: |
-              if ! command -v sfdx &> /dev/null; then
-                echo 'y' | sf plugins install sfdx-git-delta
-                sf plugins install @salesforce/sfdx-scanner
-              else
-                echo "Salesforce CLI is already installed"
-              fi
-            displayName: Install Required Plugins
-          # Download the Secure File
           - task: DownloadSecureFile@1
             name: commonSecureFile
             displayName: Download Secure File
