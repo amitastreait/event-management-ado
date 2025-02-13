@@ -48,10 +48,10 @@ stages:
           - task: Cache@2
             inputs:
               cacheHitVar: CACHE_RESTORED
-              key: 'npm | "$(Agent.OS)" | package.json'
+              key: 'sfdx | "$(Agent.OS)" | package.json'
               path: ~/.sfdx
               restoreKeys: |
-                npm | "$(Agent.OS)"
+                sfdx | "$(Agent.OS)"
             displayName: Cache Salesforce CLI
 
           - script: |
