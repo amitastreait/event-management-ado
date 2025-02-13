@@ -44,21 +44,33 @@ stages:
           - checkout: self
             fetchDepth: 0
             displayName: Checkout to correct commit
-            
-          - task: Cache@2
-            inputs:
-              cacheHitVar: CACHE_RESTORED
-              key: 'sfdx | "$(Agent.OS)" | package.json'
-              path: ~/.sfdx
-              restoreKeys: |
-                sfdx | "$(Agent.OS)"
-            displayName: Cache Salesforce CLI
 
           - script: |
-              npm install -g @salesforce/cli
-              echo 'y' | sf plugins install sfdx-git-delta
-              sf plugins install @salesforce/sfdx-scanner
-            condition: ne(variables.CACHE_RESTORED, 'true')
+            if [[ "$(Agent.OS)" == "Linux" ]]; then
+              echo "##vso[task.setvariable variable=SFDX_CACHE_PATH]$HOME/.sfdx"
+            elif [[ "$(Agent.OS)" == "Darwin" ]]; then
+              echo "##vso[task.setvariable variable=SFDX_CACHE_PATH]$HOME/.sfdx"
+            else
+              echo "##vso[task.setvariable variable=SFDX_CACHE_PATH]C:\Users\$(UserName)\AppData\Local\sfdx"
+            fi
+          displayName: Set Salesforce CLI Cache Path
+
+          - task: Cache@2
+            inputs:
+              key: 'sfdx | "$(Agent.OS)"'
+              path: $(SFDX_CACHE_PATH)
+              restoreKeys: |
+                sfdx | "$(Agent.OS)"
+            displayName: Restore Salesforce CLI Cache
+
+          - script: |
+              if ! command -v sfdx &> /dev/null; then
+                npm install -g @salesforce/cli
+                echo 'y' | sf plugins install sfdx-git-delta
+                sf plugins install @salesforce/sfdx-scanner
+              else
+                echo "Salesforce CLI found, skipping installation."
+              fi
             displayName: Install Salesforce CLI (if not cached)
 
           - task: DownloadSecureFile@1
