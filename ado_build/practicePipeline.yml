@@ -64,7 +64,7 @@ stages:
               npm install -g @salesforce/cli
               echo 'y' | sf plugins install sfdx-git-delta
               sf plugins install @salesforce/sfdx-scanner
-            condition: and(not(canceled()), eq(variables.CACHE_RESTORED, 'true'))
+            condition: ne(variables.CACHE_RESTORED, 'true')
             displayName: Install Salesforce CLI (if not cached)
 
           - task: DownloadSecureFile@1
