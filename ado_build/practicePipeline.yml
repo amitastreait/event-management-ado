@@ -48,7 +48,7 @@ stages:
           - task: Cache@2
             inputs:
               cacheHitVar: CACHE_RESTORED
-              key: 'npm | "$(Agent.OS)" | package-lock.json'
+              key: 'npm | "$(Agent.OS)" | package.json'
               path: $(npm_config_cache)
               restoreKeys: |
                 npm | "$(Agent.OS)"
