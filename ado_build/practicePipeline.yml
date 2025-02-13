@@ -46,7 +46,7 @@ stages:
           - task: Cache@2
             inputs:
               cacheHitVar: CACHE_RESTORED
-              key: 'sf-cli | ccache | "$(Agent.OS)" | $(Build.SourceVersion)'
+              key: sf-cli
               path: |
                 ~/.npm-global
                 ~/.npm
@@ -57,7 +57,7 @@ stages:
                 ~/bin/sf
                 ~/.local/share/sf
               restoreKeys: |
-                'sf-cli | ccache | "$(Agent.OS)" | $(Build.SourceVersion)'
+                sf-cli
             displayName: Cache Salesforce CLI
 
           - script: |
