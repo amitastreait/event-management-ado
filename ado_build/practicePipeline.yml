@@ -20,7 +20,7 @@ variables:
   - name: TEST_CLASS_LEVEL
     value: AccountTriggerTest
   - name: npm_config_cache
-    value: $(Pipeline.Workspace)/.npm
+    value: $(Pipeline.Workspace)/.sfdx
 
 stages:
   - stage: SFBuild
@@ -44,33 +44,21 @@ stages:
           - checkout: self
             fetchDepth: 0
             displayName: Checkout to correct commit
-
-          - script: |
-            if [[ "$(Agent.OS)" == "Linux" ]]; then
-              echo "##vso[task.setvariable variable=SFDX_CACHE_PATH]$HOME/.sfdx"
-            elif [[ "$(Agent.OS)" == "Darwin" ]]; then
-              echo "##vso[task.setvariable variable=SFDX_CACHE_PATH]$HOME/.sfdx"
-            else
-              echo "##vso[task.setvariable variable=SFDX_CACHE_PATH]C:\Users\$(UserName)\AppData\Local\sfdx"
-            fi
-          displayName: Set Salesforce CLI Cache Path
-
+            
           - task: Cache@2
             inputs:
-              key: 'sfdx | "$(Agent.OS)"'
-              path: $(SFDX_CACHE_PATH)
+              cacheHitVar: CACHE_RESTORED
+              key: 'npm | "$(Agent.OS)" | package-lock.json'
+              path: $(npm_config_cache)
               restoreKeys: |
-                sfdx | "$(Agent.OS)"
-            displayName: Restore Salesforce CLI Cache
+                npm | "$(Agent.OS)"
+            displayName: Cache Salesforce CLI
 
           - script: |
-              if ! command -v sfdx &> /dev/null; then
-                npm install -g @salesforce/cli
-                echo 'y' | sf plugins install sfdx-git-delta
-                sf plugins install @salesforce/sfdx-scanner
-              else
-                echo "Salesforce CLI found, skipping installation."
-              fi
+              npm install -g @salesforce/cli
+              echo 'y' | sf plugins install sfdx-git-delta
+              sf plugins install @salesforce/sfdx-scanner
+            condition: ne(variables.CACHE_RESTORED, 'true')
             displayName: Install Salesforce CLI (if not cached)
 
           - task: DownloadSecureFile@1
