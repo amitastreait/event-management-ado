@@ -23,20 +23,6 @@ variables:
     value: $(Pipeline.Workspace)/.sfdx
 
 stages:
-  - stage: SFBuild
-    jobs:
-      - job: SFBuild
-        steps:
-          - script: echo "SFBuild is running"
-            displayName: Single Line Script
-          - script: |
-              echo $(SF_ALIAS)
-              echo $(SF_CLIENT_ID)
-              echo $(SF_INSTANCE_URL)
-              echo $(SF_USER_NAME)
-              echo $(System.DefaultWorkingDirectory)
-              echo $(System.ArtifactStagingDirectory)
-            displayName: MultiLine Script
   - stage: SFDeployANDValidate
     jobs:
       - job: SFValidate
@@ -46,13 +32,14 @@ stages:
             displayName: Checkout to correct commit
             
           - task: Cache@2
+            
             inputs:
+              key: 'sfdx-cli | "$(Agent.OS)"'
+              path: ~/.npm-global/lib/node_modules/@salesforce/cli
               cacheHitVar: CACHE_RESTORED
-              key: 'npm | "$(Agent.OS)" | package.json'
-              path: $(npm_config_cache)
               restoreKeys: |
-                npm | "$(Agent.OS)"
-            displayName: Cache Salesforce CLI
+                sfdx-cli | "$(Agent.OS)"
+            displayName: Restore Salesforce CLI Cache
 
           - script: |
               npm install -g @salesforce/cli
@@ -60,6 +47,26 @@ stages:
               sf plugins install @salesforce/sfdx-scanner
             condition: ne(variables.CACHE_RESTORED, 'true')
             displayName: Install Salesforce CLI (if not cached)
+
+          - script: |
+              echo "Adding Salesforce CLI to PATH..."
+              export PATH=$PATH:~/.npm-global/bin
+              echo "Updated PATH: $PATH"
+            displayName: Add Salesforce CLI to PATH
+
+          - script: |
+              echo "Checking Salesforce CLI version..."
+              sf --version
+            displayName: Verify Salesforce CLI
+
+          - task: Cache@2
+            inputs:
+              key: 'sfdx-cli | "$(Agent.OS)"'
+              path: ~/.npm-global/lib/node_modules/@salesforce/cli
+              restoreKeys: |
+                sfdx-cli | "$(Agent.OS)"
+            displayName: Cache Salesforce CLI
+
 
           - task: DownloadSecureFile@1
             name: commonSecureFile
