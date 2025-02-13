@@ -20,7 +20,7 @@ variables:
   - name: TEST_CLASS_LEVEL
     value: AccountTriggerTest
   - name: npm_config_cache
-    value: $(Pipeline.Workspace)/.sfdx
+    value: $(Pipeline.Workspace)/.npm-global/lib/node_modules/@salesforce/cli
 
 stages:
   - stage: SFDeployANDValidate
@@ -35,7 +35,7 @@ stages:
             
             inputs:
               key: 'sfdx-cli | "$(Agent.OS)"'
-              path: ~/.npm-global/lib/node_modules/@salesforce/cli
+              path: $(npm_config_cache)
               cacheHitVar: CACHE_RESTORED
               restoreKeys: |
                 sfdx-cli | "$(Agent.OS)"
@@ -60,13 +60,13 @@ stages:
             displayName: Verify Salesforce CLI
 
           - task: Cache@2
+            cacheHitVar: CACHE_RESTORED
             inputs:
               key: 'sfdx-cli | "$(Agent.OS)"'
-              path: ~/.npm-global/lib/node_modules/@salesforce/cli
+              path: $(npm_config_cache)
               restoreKeys: |
                 sfdx-cli | "$(Agent.OS)"
             displayName: Cache Salesforce CLI
-
 
           - task: DownloadSecureFile@1
             name: commonSecureFile
