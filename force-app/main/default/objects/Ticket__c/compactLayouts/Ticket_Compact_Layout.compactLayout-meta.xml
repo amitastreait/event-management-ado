@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CompactLayout xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Ticket_Compact_Layout</fullName>
+    <fields>Name</fields>
+    <fields>Attendee__c</fields>
+    <fields>Event__c</fields>
+    <fields>TicketPrice__c</fields>
+    <fields>Status__c</fields>
+    <fields>TShirtSize__c</fields>
+    <fields>VenueDirection__c</fields>
+    <fields>VenueName__c</fields>
+    <fields>TicketSent__c</fields>
+    <fields>DiscountPrice__c</fields>
+    <label>Ticket Compact Layout</label>
+</CompactLayout>
