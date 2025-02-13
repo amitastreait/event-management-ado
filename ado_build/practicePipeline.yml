@@ -60,8 +60,8 @@ stages:
             displayName: Verify Salesforce CLI
 
           - task: Cache@2
-            cacheHitVar: CACHE_RESTORED
             inputs:
+              cacheHitVar: CACHE_RESTORED
               key: 'sfdx-cli | "$(Agent.OS)"'
               path: $(npm_config_cache)
               restoreKeys: |
