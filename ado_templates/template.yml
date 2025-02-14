@@ -17,6 +17,15 @@ parameters:
 - name: PR_MERGED
   type: boolean
   default: false
+- name: BY_PASS_CODE_COVERAGE
+  type: string
+  default: no
+- name: BY_PASS_CODE_SCANNER
+  type: string
+  default: no
+- name: SLACK_WEBHOOK_URL
+  type: string
+  default: no
 
 jobs:
   - job: SFValidate
@@ -24,43 +33,20 @@ jobs:
       - checkout: self
         fetchDepth: 0
         displayName: Checkout to correct commit
-      - task: Cache@2
-        inputs:
-          key: 'sfdx | "$(Agent.OS)"'
-          path: |
-            ~/.npm-global
-            ~/.npm
-            ~/.sf
-            ~/.sfdx
-            ~/node_modules
-            ~/node_modules/@salesforce
-            ~/bin/sf
-            ~/.local/share/sf
-          restoreKeys: |
-            sfdx | "$(Agent.OS)"
-        displayName: Cache Salesforce CLI and npm dependencies
 
       - script: |
-          if ! command -v sfdx &> /dev/null; then
-            echo "Salesforce CLI not found, installing..."
-            npm install -g @salesforce/cli
-          else
-            echo "Salesforce CLI is already installed"
-          fi
-        displayName: Install Salesforce CLI if not cached
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"Hello, World! I coming from ADO"}' $(SLACK_WEBHOOK_URL)
+        displayName: Post to Slack
 
-      #- script: npm install -g @salesforce/cli
-      #  displayName: Install Salesforce CI
+      - script: |
+          npm install -g @salesforce/cli
+        displayName: Install Salesforce CLI if not cached
 
       - script: sf --version
         displayName: Verify CLI Installation 
       - script: |
-          if ! command -v sfdx &> /dev/null; then
-            echo 'y' | sf plugins install sfdx-git-delta
-            sf plugins install @salesforce/sfdx-scanner
-          else
-            echo "Salesforce CLI is already installed"
-          fi
+          echo 'y' | sf plugins install sfdx-git-delta
+          sf plugins install @salesforce/sfdx-scanner
         displayName: Install Required Plugins
       # Download the Secure File
       - task: DownloadSecureFile@1
@@ -75,6 +61,15 @@ jobs:
       - script: |
           sf apex run test --target-org $(SF_ALIAS) --test-level RunLocalTests --code-coverage --result-format human -d ./ --wait 10
         displayName: Run Local Tests
+        
+      # Run Python file to get the code coverage CODE_COVERAGE.py
+      - task: PythonScript@0
+        inputs:
+          scriptSource: 'filePath'
+          scriptPath: 'CODE_COVERAGE.py'
+        displayName: Run Code Coverage Check
+        condition: eq('${{ parameters.BY_PASS_CODE_COVERAGE }}', 'yes')
+
       # Salesforce Code analyzer
       - script: |
           mkdir scanner_reports
@@ -117,15 +112,37 @@ jobs:
             echo "---- No changes to validate ----"
           fi
         displayName: Validate Pre-Destructive Changes in Salesforce
+        condition: eq( '${{ parameters.PR_MERGED }}', 'false' )
 
       - script: |
           if grep -q '<types>' delta/package/package.xml ; then
             echo "---- Deploying added and modified metadata ----"
             sf project deploy start --target-org $(SF_ALIAS) --manifest delta/package/package.xml --dry-run --wait 15
           else
-            echo "---- No changes to deploy ----"
+            echo "---- No changes to validate ----"
           fi
         displayName: Validate the changes
+        condition: eq( '${{ parameters.PR_MERGED }}', 'false' )
+      
+      - script: |
+          if grep -q '<types>' delta/destructiveChanges/destructiveChanges.xml ; then
+            echo "---- Validate Pre-Destructive Changes in Salesforce ----"
+            sf project deploy start --target-org $(SF_ALIAS) --pre-destructive-changes delta/destructiveChanges/destructiveChanges.xml --manifest delta/destructiveChanges/package.xml --wait 15
+          else
+            echo "---- No changes to deploy ----"
+          fi
+        displayName: Deploy Pre-Destructive Changes in Salesforce
+        condition: eq( '${{ parameters.PR_MERGED }}', 'true' )
+
+      - script: |
+          if grep -q '<types>' delta/package/package.xml ; then
+            echo "---- Deploying added and modified metadata ----"
+            sf project deploy start --target-org $(SF_ALIAS) --manifest delta/package/package.xml --wait 15
+          else
+            echo "---- No changes to deploy ----"
+          fi
+        displayName: Deploy the changes
+        condition: eq( '${{ parameters.PR_MERGED }}', 'true' )
         
       - script: |
           if grep -q '<types>' destructiveChanges/postDestructiveChanges.xml ; then
@@ -135,6 +152,8 @@ jobs:
             echo "---- No changes to deploy ----"
           fi
         displayName: Deploy Post-Destructive Changes in Salesforce
+        condition: eq( '${{ parameters.PR_MERGED }}', 'true' )
+
   - job: SFDeploy
     steps:
       - script: echo "SFBuild is running"
