@@ -28,3 +28,6 @@ stages:
           SF_INSTANCE_URL: $(SF_INSTANCE_URL)
           SECURE_FILE_NAME: 'server-sit.key'
           PR_MERGED: true
+          BY_PASS_CODE_COVERAGE: $(BY_PASS_CODE_COVERAGE)
+          BY_PASS_CODE_SCANNER: $(BY_PASS_CODE_SCANNER)
+          SLACK_WEBHOOK_URL: $(SLACK_WEBHOOK_URL)

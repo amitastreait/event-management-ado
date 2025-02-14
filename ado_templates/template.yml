@@ -17,6 +17,15 @@ parameters:
 - name: PR_MERGED
   type: boolean
   default: false
+- name: BY_PASS_CODE_COVERAGE
+  type: string
+  default: no
+- name: BY_PASS_CODE_SCANNER
+  type: string
+  default: no
+- name: SLACK_WEBHOOK_URL
+  type: string
+  default: no
 
 jobs:
   - job: SFValidate
@@ -24,6 +33,10 @@ jobs:
       - checkout: self
         fetchDepth: 0
         displayName: Checkout to correct commit
+
+      - script: |
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"Hello, World! I coming from ADO"}' $(SLACK_WEBHOOK_URL)
+        displayName: Post to Slack
 
       - script: |
           npm install -g @salesforce/cli
@@ -48,6 +61,15 @@ jobs:
       - script: |
           sf apex run test --target-org $(SF_ALIAS) --test-level RunLocalTests --code-coverage --result-format human -d ./ --wait 10
         displayName: Run Local Tests
+        
+      # Run Python file to get the code coverage CODE_COVERAGE.py
+      - task: PythonScript@0
+        inputs:
+          scriptSource: 'filePath'
+          scriptPath: 'CODE_COVERAGE.py'
+        displayName: Run Code Coverage Check
+        condition: eq('${{ parameters.BY_PASS_CODE_COVERAGE }}', 'yes')
+
       # Salesforce Code analyzer
       - script: |
           mkdir scanner_reports
