@@ -11,7 +11,7 @@ pr:
      - force-app/*
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: linux_hosted_amit # ubuntu-latest
 
 variables:
   - group: uat
