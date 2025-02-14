@@ -48,6 +48,14 @@ jobs:
       - script: |
           sf apex run test --target-org $(SF_ALIAS) --test-level RunLocalTests --code-coverage --result-format human -d ./ --wait 10
         displayName: Run Local Tests
+        
+      # Run Python file to get the code coverage CODE_COVERAGE.py
+      - task: PythonScript@0
+        inputs:
+          scriptSource: 'filePath'
+          scriptPath: 'CODE_COVERAGE.py'
+        displayName: Run Code Coverage Check
+
       # Salesforce Code analyzer
       - script: |
           mkdir scanner_reports
