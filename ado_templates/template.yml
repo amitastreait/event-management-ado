@@ -23,6 +23,9 @@ parameters:
 - name: BY_PASS_CODE_SCANNER
   type: string
   default: no
+- name: SLACK_WEBHOOK_URL
+  type: string
+  default: no
 
 jobs:
   - job: SFValidate
@@ -30,6 +33,10 @@ jobs:
       - checkout: self
         fetchDepth: 0
         displayName: Checkout to correct commit
+
+      - script: |
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"Hello, World! I coming from ADO"}' $(SLACK_WEBHOOK_URL)
+        displayName: Post to Slack
 
       - script: |
           npm install -g @salesforce/cli
