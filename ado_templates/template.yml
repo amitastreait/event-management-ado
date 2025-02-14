@@ -38,7 +38,7 @@ jobs:
           curl X POST \
           -H "Content-Type: application/json" \
           --data '{
-            "text": "Hello, World! I am coming from ADO"
+            "text": "The Job has statted at ADO Pipeline $(Agent.JobStatus) Build Url $(Build.BuildUri) $(Build.QueuedBy) $(Build.SourceBranchName)"
           }' \
           $(SLACK_WEBHOOK_URL)
 
