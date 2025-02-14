@@ -35,7 +35,11 @@ jobs:
         displayName: Checkout to correct commit
 
       - script: |
-          curl -X POST -H 'Content-type: application/json' --data '{"text":"Hello, World! I coming from ADO"}' $(SLACK_WEBHOOK_URL)
+          curl -X POST -H 'Content-type: application/json' --data |
+            {
+              "text": "Hello, World! I coming from ADO"
+            }
+          $(SLACK_WEBHOOK_URL)
         displayName: Post to Slack
 
       - script: |
