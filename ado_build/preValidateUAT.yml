@@ -28,5 +28,5 @@ stages:
           SF_INSTANCE_URL: $(SF_INSTANCE_URL)
           SECURE_FILE_NAME: 'server-uat.key'
           PR_MERGED: false
-          BY_PASS_CODE_COVERAGE: $(BY_PASS_CODE_COVERAGE)
-          BY_PASS_CODE_SCANNER: $(BY_PASS_CODE_SCANNER)
+          BY_PASS_CODE_COVERAGE: ne('$(BY_PASS_CODE_COVERAGE)', 'false')
+          BY_PASS_CODE_SCANNER: ne('$(BY_PASS_CODE_SCANNER)','false')
