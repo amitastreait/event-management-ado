@@ -54,5 +54,4 @@ export default class AddressForm extends LightningElement {
             );
         }
     }
-    /** Add simple comment */
 }
