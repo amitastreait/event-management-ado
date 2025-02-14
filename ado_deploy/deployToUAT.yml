@@ -28,3 +28,5 @@ stages:
           SF_INSTANCE_URL: $(SF_INSTANCE_URL)
           SECURE_FILE_NAME: 'server-uat.key'
           PR_MERGED: true
+          BY_PASS_CODE_COVERAGE: $(BY_PASS_CODE_COVERAGE)
+          BY_PASS_CODE_SCANNER: $(BY_PASS_CODE_SCANNER)
