@@ -1,5 +1,8 @@
 # Setup Self-Hoster Runner in Azure Pipeline
 
+## Azure DevOps Pipeline Document Link
+You can get the complete document using [Link](https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/pipeline?view=azure-pipelines)
+
 ## Required steps to setup Self-Hoted Runner
 
 1. Download the Runner using [ADO Official Link](https://vstsagentpackage.azureedge.net/agent/4.251.0/vsts-agent-linux-x64-4.251.0.tar.gz)
@@ -23,11 +26,69 @@
 
 ### Configure the Pipeline to take this agent
 
-Make the necessary changes into the YML pipeline so that your new runners will work
+Make the necessary changes into the YML pipeline so that your new runners will work.
+You can read more about the same using [link](https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/pool?view=azure-pipelines)
 ```yml
 pool:
   name: default # Provide the name of your self hosted runner. The name of the Pool Can be different if you using a Custom Pool
   # vmImage: ubuntu-latest # use this only when you are using Microsoft Hosted Runners
+```
+
+## How to read the PR Body in Azure Pipeline
+```yml
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger: none
+
+pr:
+ branches:
+   include:
+     - main
+     - master
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- script: echo Hello, world!
+  displayName: 'Run a one-line script'
+
+- script: |
+    echo Add other tasks to build, test, and deploy your project.
+    echo See https://aka.ms/yaml
+  displayName: 'Run a multi-line script'
+  
+- task: PowerShell@2
+  name: prbody
+  displayName: "Read PR description"
+  inputs:
+    targetType: 'inline'
+    script: |
+
+      # Call the Azure DevOps Services Rest API.
+      $url = "$($env:SYSTEM_TEAMFOUNDATIONCOLLECTIONURI)$env:SYSTEM_TEAMPROJECTID/_apis/git/repositories/$(Build.Repository.ID)/pullRequests/$(System.PullRequest.PullRequestId)?api-version=7.0"
+      $headers = @{
+        Authorization = "Bearer $(System.AccessToken)"
+      }
+      $pullRequestInfo = Invoke-RestMethod -Uri $url -Method 'GET' -ContentType 'application/json' -Headers $headers
+
+      # Get PR description from the json response.
+      $json = $($pullRequestInfo | ConvertTo-Json -Depth 100 | ConvertFrom-Json)
+      $description = $json.description
+
+      # Replace newlines with a placeholder (e.g., `__NEWLINE__`)
+      $description = $description -replace "`r`n", " "  # Windows newlines
+      $description = $description -replace "`n", " "    # Unix newlines
+
+      # echo "##vso[task.setvariable variable=PR_BODY;isOutput=true]$description"
+      Write-Host "##vso[task.setvariable variable=PR_BODY;isOutput=true]$description"
+
+- script: |
+    echo "$(prbody.PR_BODY)"
+  displayName: "PR Body"
 ```
 
 ## Salesforce DX Project: Next Steps

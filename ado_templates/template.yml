@@ -41,8 +41,36 @@ jobs:
             "text": "The Job has statted at ADO Pipeline $(Agent.JobStatus) Build Url $(Build.BuildUri) $(Build.QueuedBy) $(Build.SourceBranchName)"
           }' \
           $(SLACK_WEBHOOK_URL)
-
         displayName: Post to Slack
+
+      - task: PowerShell@2
+        name: prbody
+        displayName: "Read PR description"
+        inputs:
+          targetType: 'inline'
+          script: |
+
+            # Call the Azure DevOps Services Rest API.
+            $url = "$($env:SYSTEM_TEAMFOUNDATIONCOLLECTIONURI)$env:SYSTEM_TEAMPROJECTID/_apis/git/repositories/$(Build.Repository.ID)/pullRequests/$(System.PullRequest.PullRequestId)?api-version=7.0"
+            $headers = @{
+              Authorization = "Bearer $(System.AccessToken)"
+            }
+            $pullRequestInfo = Invoke-RestMethod -Uri $url -Method 'GET' -ContentType 'application/json' -Headers $headers
+
+            # Get PR description from the json response.
+            $json = $($pullRequestInfo | ConvertTo-Json -Depth 100 | ConvertFrom-Json)
+            $description = $json.description
+
+            # Replace newlines with a placeholder (e.g., `__NEWLINE__`)
+            $description = $description -replace "`r`n", " "  # Windows newlines
+            $description = $description -replace "`n", " "    # Unix newlines
+
+            # echo "##vso[task.setvariable variable=PR_BODY;isOutput=true]$description"
+            Write-Host "##vso[task.setvariable variable=PR_BODY;isOutput=true]$description"
+
+      - script: |
+          echo "$(SFValidate.prbody.PR_BODY)"
+        displayName: "PR Body"
 
       - script: |
           npm install -g @salesforce/cli
