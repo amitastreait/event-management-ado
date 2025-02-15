@@ -66,6 +66,9 @@ stages:
                   # Replace newlines to avoid truncation
                   $description = $description -replace "`r`n", " "  # Windows newlines
                   $description = $description -replace "`n", " "    # Unix newlines
+
+                  echo $description
+
                   # Store PR description as a pipeline variable
                   Write-Host "##vso[task.setvariable variable=PR_BODY;isOutput=true]$description"
           - script: |
