@@ -45,14 +45,16 @@ jobs:
         displayName: Post to Slack
 
       - script: |
-          npm install -g @salesforce/cli
+          echo Install Salesforce CLI
+          # npm install -g @salesforce/cli
         displayName: Install Salesforce CLI if not cached
 
       - script: sf --version
         displayName: Verify CLI Installation 
       - script: |
-          echo 'y' | sf plugins install sfdx-git-delta
-          sf plugins install @salesforce/sfdx-scanner
+          echo Install Required Plugins
+          # echo 'y' | sf plugins install sfdx-git-delta
+          # sf plugins install @salesforce/sfdx-scanner
         displayName: Install Required Plugins
       # Download the Secure File
       - task: DownloadSecureFile@1
