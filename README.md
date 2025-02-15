@@ -61,6 +61,9 @@ steps:
       $description = $description -replace "`r`n", " "  # Windows newlines
       $description = $description -replace "`n", " "    # Unix newlines
 
+      # Write PR body to file (handle newlines properly)
+      Set-Content -Path pr_body.txt -Value $description -Encoding UTF8
+
       # echo "##vso[task.setvariable variable=PR_BODY;isOutput=true]$description"
       Write-Host "##vso[task.setvariable variable=PR_BODY;isOutput=true]$description"
 
@@ -106,6 +109,7 @@ stages:
             fetchDepth: 0
             displayName: Checkout to correct commit
 
+          # 🟢 Fetch PR Description from GitHub API
           - task: PowerShell@2
             name: fetchPRBody
             displayName: "Fetch GitHub PR Description"
@@ -143,11 +147,30 @@ stages:
 
                   echo $description
 
+                  # Write PR body to file (handle newlines properly)
+                  Set-Content -Path pr_body.txt -Value $description -Encoding UTF8
+
                   # Store PR description as a pipeline variable
                   Write-Host "##vso[task.setvariable variable=PR_BODY;isOutput=true]$description"
+          
+          # 🟢 Display PR Body (for debugging)
           - script: |
               echo "$(fetchPRBody.PR_BODY)"
             displayName: GitHub Actions PR BODY
+
+          # 🟢 Extract Apex Test Classes using Python
+          - task: PythonScript@0
+            name: extractApex
+            displayName: "Extract Apex Test Classes"
+            inputs:
+              scriptSource: 'filePath'
+              scriptPath: 'PRBODY_TESTCLASS.py'
+              arguments: 'pr_body.txt'   # ✅ Pass file instead of direct text
+
+          # 🟢 Use Extracted Apex Test Classes
+          - script: |
+              echo "Extracted Apex Classes: $(extractApex.APEX_CLASSES)"
+            displayName: "Use Extracted Apex Classes"
 ```
 
 ### Use the python code for fetching the Apex class
@@ -165,6 +188,7 @@ def extract_apex_classes(pr_body):
     Returns:
         str: A space-separated string of Apex class names or an error message.
     """
+    print(pr_body)
     # Using regex to extract the test class names from the last line
     match = re.search(r"APEX TEST CLASS TO RUN \[RUN:([^\]]+)\]", pr_body)
     if match:
@@ -175,21 +199,22 @@ def extract_apex_classes(pr_body):
         return "No Apex classes found"
 
 if __name__ == "__main__":
-    # Set up argument parser
-    parser = argparse.ArgumentParser(description="Extract Apex test classes from PR body.")
-    parser.add_argument("pr_body", type=str, help="The PR body text")
+    parser = argparse.ArgumentParser(description="Extract Apex test classes from PR body file.")
+    parser.add_argument("file_path", type=str, help="Path to the PR body file")
 
-    # Parse arguments
     args = parser.parse_args()
 
-    # Extract and print Apex test classes
-    result = extract_apex_classes(args.pr_body)
+    # Read PR body from file
+    with open(args.file_path, "r", encoding="utf-8") as file:
+        pr_body = file.read().strip()
+
+    result = extract_apex_classes(pr_body)
+
+    # Print result normally
     print(result)
 
     # Set Azure DevOps variable
     print(f"##vso[task.setvariable variable=APEX_CLASSES;isOutput=true]{result}")
-
-# python PRBODY_TESTCLASS.py "This PR contains some updates. APEX TEST CLASS TO RUN [RUN:TestClass1, TestClass2, TestClass3]"
 ```
 
 ## Required steps to setup Self-Hoted Runner
