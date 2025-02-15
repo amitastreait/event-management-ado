@@ -27,7 +27,6 @@ if __name__ == "__main__":
 
     # Parse arguments
     args = parser.parse_args()
-
     # Extract and print Apex test classes
     result = extract_apex_classes(args.pr_body)
     print(result)
