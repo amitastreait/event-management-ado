@@ -52,7 +52,7 @@ stages:
                       exit 1
                   }
                   echo $githubPrNumber
-                  $url = "https://api.github.com/repos/$(repoOwner)/$(repoName)/pulls/$prNumber"
+                  $url = "https://api.github.com/repos/$(repoOwner)/$(repoName)/pulls/$githubPrNumber"
                   echo $url
                   # GitHub API authentication (Use GitHub PAT stored as a secret variable in ADO)
                   $headers = @{
