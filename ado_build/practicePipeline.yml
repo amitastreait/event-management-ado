@@ -32,6 +32,7 @@ stages:
             fetchDepth: 0
             displayName: Checkout to correct commit
 
+          # 🟢 Fetch PR Description from GitHub API
           - task: PowerShell@2
             name: fetchPRBody
             displayName: "Fetch GitHub PR Description"
@@ -69,20 +70,27 @@ stages:
 
                   echo $description
 
+                  # Write PR body to file (handle newlines properly)
+                  Set-Content -Path pr_body.txt -Value $description -Encoding UTF8
+
                   # Store PR description as a pipeline variable
                   Write-Host "##vso[task.setvariable variable=PR_BODY;isOutput=true]$description"
+          
+          # 🟢 Display PR Body (for debugging)
           - script: |
               echo "$(fetchPRBody.PR_BODY)"
             displayName: GitHub Actions PR BODY
 
+          # 🟢 Extract Apex Test Classes using Python
           - task: PythonScript@0
             name: extractApex
             displayName: "Extract Apex Test Classes"
             inputs:
               scriptSource: 'filePath'
               scriptPath: 'PRBODY_TESTCLASS.py'
-              arguments: $(fetchPRBody.PR_BODY)
+              arguments: 'pr_body.txt'   # ✅ Pass file instead of direct text
 
+          # 🟢 Use Extracted Apex Test Classes
           - script: |
               echo "Extracted Apex Classes: $(extractApex.APEX_CLASSES)"
             displayName: "Use Extracted Apex Classes"
