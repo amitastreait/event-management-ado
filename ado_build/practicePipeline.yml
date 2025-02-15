@@ -3,10 +3,11 @@
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
 
-trigger: # equalant to push in Github action
+trigger: none
+pr:
   branches:
-    include:
-      - feature/*
+      include:
+        - feature/*
   paths:
     include:
       - force-app/*
@@ -17,10 +18,10 @@ pool:
 
 variables:
   - group: uat
-  - name: TEST_CLASS_LEVEL
-    value: AccountTriggerTest
-  - name: npm_config_cache
-    value: $(Pipeline.Workspace)/.npm-global/lib/node_modules/@salesforce/cli
+  - name: repoOwner
+    value: "amitastreait"
+  - name: repoName
+    value: "event-management-ado"
 
 stages:
   - stage: SFDeployANDValidate
@@ -30,130 +31,31 @@ stages:
           - checkout: self
             fetchDepth: 0
             displayName: Checkout to correct commit
-            
-          - task: Cache@2
-            
+          - task: PowerShell@2
+            name: fetchPRBody
+            displayName: "Fetch GitHub PR Description"
             inputs:
-              key: 'sfdx-cli | "$(Agent.OS)"'
-              path: $(npm_config_cache)
-              cacheHitVar: CACHE_RESTORED
-              restoreKeys: |
-                sfdx-cli | "$(Agent.OS)"
-            displayName: Restore Salesforce CLI Cache
+              targetType: 'inline'
+              script: |
+                  # Define GitHub API URL
+                  $prNumber = "$(System.PullRequest.PullRequestId)"  #Fetch PR ID from ADO pipeline variable
+                  echo $prNumber
+                  $url = "https://api.github.com/repos/$(repoOwner)/$(repoName)/pulls/$prNumber"
 
+                  # GitHub API authentication (Use GitHub PAT stored as a secret variable in ADO)
+                  $headers = @{
+                      Authorization = "Bearer $(GITHUB_PAT)"  # GITHUB_PAT should be stored securely in ADO
+                      Accept = "application/vnd.github.v3+json"
+                  }
+                  # Fetch PR details
+                  $response = Invoke-RestMethod -Uri $url -Method 'GET' -Headers $headers -ContentType "application/json"
+                  # Extract PR description
+                  $description = $response.body  # PR description
+                  # Replace newlines to avoid truncation
+                  $description = $description -replace "`r`n", " "  # Windows newlines
+                  $description = $description -replace "`n", " "    # Unix newlines
+                  # Store PR description as a pipeline variable
+                  Write-Host "##vso[task.setvariable variable=PR_BODY;isOutput=true]$description"
           - script: |
-              npm install -g @salesforce/cli
-              echo 'y' | sf plugins install sfdx-git-delta
-              sf plugins install @salesforce/sfdx-scanner
-            condition: ne(variables.CACHE_RESTORED, 'true')
-            displayName: Install Salesforce CLI (if not cached)
-
-          - script: |
-              echo "Adding Salesforce CLI to PATH..."
-              export PATH=$PATH:~/.npm-global/bin
-              echo "Updated PATH: $PATH"
-            displayName: Add Salesforce CLI to PATH
-
-          - script: |
-              echo "Checking Salesforce CLI version..."
-              sf --version
-            displayName: Verify Salesforce CLI
-
-          - task: Cache@2
-            inputs:
-              cacheHitVar: CACHE_RESTORED
-              key: 'sfdx-cli | "$(Agent.OS)"'
-              path: $(npm_config_cache)
-              restoreKeys: |
-                sfdx-cli | "$(Agent.OS)"
-            displayName: Cache Salesforce CLI
-
-          - task: DownloadSecureFile@1
-            name: commonSecureFile
-            displayName: Download Secure File
-            inputs:
-              secureFile: 'server-uat.key' # Name of the secure file
-          - script: |
-              sf org login jwt --jwt-key-file $(commonSecureFile.secureFilePath) --username $(SF_USER_NAME) --client-id $(SF_CLIENT_ID) --set-default --alias $(SF_ALIAS) --instance-url $(SF_INSTANCE_URL)
-            displayName: Authenticate with Salesforce
-          - script: |
-              sf apex run test --target-org $(SF_ALIAS) --test-level RunLocalTests --code-coverage --result-format human -d ./ --wait 10
-            displayName: Run Local Tests
-          # Salesforce Code analyzer
-          - script: |
-              mkdir scanner_reports
-              sf scanner run --format html --target "force-app/main/default" --engine eslint,eslint-lwc,eslint-typescript,pmd,retire-js,cpd --category Design,Best Practices,Code Style,Performance,Security --outfile scanner_reports/scanner_reports.html
-            displayName: Run Salesforce Code analyzer
-          # upload as an artifacts
-
-          #1 Build Artifacts
-          - task: PublishBuildArtifacts@1
-            inputs:
-              PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-              ArtifactName: 'My First Pipeline'
-              publishLocation: 'Container'
-              StoreAsTar: true
-            displayName: Publish Build Artifacts
-          #2 Pipeline Artifacts
-          - task: PublishPipelineArtifact@1
-            inputs:
-              targetPath: '$(System.DefaultWorkingDirectory)/scanner_reports'
-              artifact: 'SF_CLI_REPORTS'
-              publishLocation: 'pipeline'
-            displayName: Publish SF CLI Scanner Reports
-
-          # Generate the Delta for Delta Deployment
-          - script: |
-              mkdir delta
-              # Generate Delta for deployment
-              # https://github.com/scolladon/sfdx-git-delta
-              sf sgd source delta --to "HEAD" --from "HEAD~1" --output-dir ./delta --generate-delta --ignore-whitespace --ignore-file .sgdignore
-              cat ./delta/package/package.xml
-              cat ./delta/destructiveChanges/destructiveChanges.xml
-              ls -l ./delta
-            displayName: Generate Delta for the Deployment
-          
-          - script: |
-              if grep -q '<types>' delta/destructiveChanges/destructiveChanges.xml ; then
-                echo "---- Validate Pre-Destructive Changes in Salesforce ----"
-                sf project deploy start --target-org $(SF_ALIAS) --pre-destructive-changes delta/destructiveChanges/destructiveChanges.xml --manifest delta/destructiveChanges/package.xml --dry-run --wait 15
-              else
-                echo "---- No changes to validate ----"
-              fi
-            displayName: Validate Pre-Destructive Changes in Salesforce
-
-          - script: |
-              if grep -q '<types>' delta/package/package.xml ; then
-                echo "---- Deploying added and modified metadata ----"
-                sf project deploy start --target-org $(SF_ALIAS) --manifest delta/package/package.xml --dry-run --wait 15
-              else
-                echo "---- No changes to deploy ----"
-              fi
-            displayName: Validate the changes
-            
-          - script: |
-              if grep -q '<types>' destructiveChanges/postDestructiveChanges.xml ; then
-                echo "---- Deploy Pre-Destructive Changes in Salesforce ----"
-                sf project deploy start --target-org $(SF_ALIAS) --post-destructive-changes destructiveChanges/postDestructiveChanges.xml --manifest destructiveChanges/package.xml --wait 15
-              else
-                echo "---- No changes to deploy ----"
-              fi
-            displayName: Deploy Post-Destructive Changes in Salesforce
-      - job: SFDeploy
-        steps:
-          - script: echo "SFBuild is running"
-            displayName: Single Line Script
-          - script: |
-              echo "Multiple line 1"
-              echo "Multiple line 2"
-            displayName: MultiLine Script
-  - stage: SFTest
-    jobs:
-      - job: SFTest
-        steps:
-          - script: echo "SFBuild is running"
-            displayName: Single Line Script
-          - script: |
-              echo "Multiple line 1"
-              echo "Multiple line 2"
-            displayName: MultiLine Script
+              echo "$(SFValidate.prbody.PR_BODY)"
+            displayName: Azure DevOps PR BODY
