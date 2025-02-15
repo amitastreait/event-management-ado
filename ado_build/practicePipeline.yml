@@ -7,7 +7,8 @@ trigger: none
 pr:
   branches:
       include:
-        - feature/*
+        - uat
+        - UAT
   paths:
     include:
       - force-app/*
