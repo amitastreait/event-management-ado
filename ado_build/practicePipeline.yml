@@ -41,7 +41,7 @@ stages:
                   # Get the source branch name
                   $sourceBranch = "$(Build.SourceBranch)"  # Example: "refs/pull/13/merge"
                   # Define GitHub API URL
-                  $prNumber = "$(System.PullRequest.PullRequestId)"  #Fetch PR ID from ADO pipeline variable
+                  $prNumber = "$(System.PullRequest.PullRequestId)"
                   echo $prNumber
 
                   # Extract PR number using regex
@@ -73,4 +73,16 @@ stages:
                   Write-Host "##vso[task.setvariable variable=PR_BODY;isOutput=true]$description"
           - script: |
               echo "$(fetchPRBody.PR_BODY)"
-            displayName: Azure DevOps PR BODY
+            displayName: GitHub Actions PR BODY
+            
+          - task: PythonScript@0
+            name: extractApex
+            displayName: "Extract Apex Test Classes"
+            inputs:
+              scriptSource: 'filePath'
+              scriptPath: 'PRBODY_TESTCLASS.py'
+              arguments: '$(SFValidate.prbody.PR_BODY)'
+
+          - script: |
+              echo "Extracted Apex Classes: $(extractApex.APEX_CLASSES)"
+            displayName: "Use Extracted Apex Classes"
