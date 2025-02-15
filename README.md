@@ -1,4 +1,36 @@
-# Salesforce DX Project: Next Steps
+# Setup Self-Hoster Runner in Azure Pipeline
+
+## Required steps to setup Self-Hoted Runner
+
+1. Download the Runner using [ADO Official Link](https://vstsagentpackage.azureedge.net/agent/4.251.0/vsts-agent-linux-x64-4.251.0.tar.gz)
+2. Extract the file using ```tar zxvf vsts-agent-linux-x64-4.251.0.tar.gz```
+3. Run ```./config.sh``` to configure the agent
+
+## Steps after the Hosted Runner is Configured
+
+1. Install Node.js
+2. Install npm
+3. Install Salesforce CLI
+4. Install required plugins
+    code analyzer
+    sfdx git delta
+5. Install Java or later
+    5.1 - sudo apt install default-jre
+    5.2 sudo apt install default-jdk
+
+### Run the Self-Hosted Runner
+1. Finally run ```./run.sh``` to run the agent
+
+### Configure the Pipeline to take this agent
+
+Make the necessary changes into the YML pipeline so that your new runners will work
+```yml
+pool:
+  name: default # Provide the name of your self hosted runner. The name of the Pool Can be different if you using a Custom Pool
+  # vmImage: ubuntu-latest # use this only when you are using Microsoft Hosted Runners
+```
+
+## Salesforce DX Project: Next Steps
 
 Now that you’ve created a Salesforce DX project, what’s next? Here are some documentation resources to get you started.
 
