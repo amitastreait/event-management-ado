@@ -11,6 +11,7 @@ def extract_apex_classes(pr_body):
     Returns:
         str: A space-separated string of Apex class names or an error message.
     """
+    print(pr_body)
     # Using regex to extract the test class names from the last line
     match = re.search(r"APEX TEST CLASS TO RUN \[RUN:([^\]]+)\]", pr_body)
     if match:

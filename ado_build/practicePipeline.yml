@@ -74,14 +74,14 @@ stages:
           - script: |
               echo "$(fetchPRBody.PR_BODY)"
             displayName: GitHub Actions PR BODY
-            
+
           - task: PythonScript@0
             name: extractApex
             displayName: "Extract Apex Test Classes"
             inputs:
               scriptSource: 'filePath'
               scriptPath: 'PRBODY_TESTCLASS.py'
-              arguments: '$(SFValidate.prbody.PR_BODY)'
+              arguments: '$(SFValidate.fetchPRBody.PR_BODY)'
 
           - script: |
               echo "Extracted Apex Classes: $(extractApex.APEX_CLASSES)"
