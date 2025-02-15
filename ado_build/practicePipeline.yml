@@ -7,8 +7,7 @@ trigger: none
 pr:
   branches:
       include:
-        - uat
-        - UAT
+        - azure-pipelines
   paths:
     include:
       - force-app/*
@@ -32,44 +31,29 @@ stages:
           - checkout: self
             fetchDepth: 0
             displayName: Checkout to correct commit
-            
-          - task: PowerShell@2
-            name: fetchPRNumber
-            displayName: "Fetch Correct GitHub PR Number"
-            inputs:
-              targetType: 'inline'
-              script: |
 
-                # Azure DevOps API to get PR details
-                $adoUrl = "$(System.TeamFoundationCollectionUri)$(System.TeamProject)/_apis/pipelines/workflows/$(Build.BuildId)/resources?api-version=6.0-preview.1"
-                
-                # Azure DevOps Authorization Header (Uses System.AccessToken)
-                $headers = @{
-                  Authorization = "Bearer $(System.AccessToken)"
-                }
-
-                # Call Azure DevOps API
-                $response = Invoke-RestMethod -Uri $adoUrl -Method 'GET' -Headers $headers -ContentType "application/json"
-                
-                # Extract the correct GitHub PR number
-                $githubPrNumber = $response.resources.pullRequests[0].pullRequestId
-
-                Write-Host "##vso[task.setvariable variable=GITHUB_PR_NUMBER;isOutput=true]$githubPrNumber"
-
-          - script: |
-              echo "Correct GitHub PR Number: $(SFValidate.fetchPRNumber.GITHUB_PR_NUMBER)"
-            displayName: "Print GitHub PR Number"
-
+          # 🟢 Fetch PR Description from GitHub API
           - task: PowerShell@2
             name: fetchPRBody
             displayName: "Fetch GitHub PR Description"
             inputs:
               targetType: 'inline'
               script: |
+                  # Get the source branch name
+                  $sourceBranch = "$(Build.SourceBranch)"  # Example: "refs/pull/13/merge"
                   # Define GitHub API URL
-                  $prNumber = "$(System.PullRequest.PullRequestId)"  #Fetch PR ID from ADO pipeline variable
-                  echo $(SFValidate.fetchPRNumber.GITHUB_PR_NUMBER)
-                  $url = "https://api.github.com/repos/$(repoOwner)/$(repoName)/pulls/$(SFValidate.fetchPRNumber.GITHUB_PR_NUMBER)"
+                  $prNumber = "$(System.PullRequest.PullRequestId)"
+                  echo $prNumber
+
+                  # Extract PR number using regex
+                  if ($sourceBranch -match "refs/pull/(\d+)/merge") {
+                      $githubPrNumber = $matches[1]
+                  } else {
+                      Write-Host "##vso[task.logissue type=error]Could not extract GitHub PR number"
+                      exit 1
+                  }
+                  echo $githubPrNumber
+                  $url = "https://api.github.com/repos/$(repoOwner)/$(repoName)/pulls/$githubPrNumber"
                   echo $url
                   # GitHub API authentication (Use GitHub PAT stored as a secret variable in ADO)
                   $headers = @{
@@ -83,8 +67,30 @@ stages:
                   # Replace newlines to avoid truncation
                   $description = $description -replace "`r`n", " "  # Windows newlines
                   $description = $description -replace "`n", " "    # Unix newlines
+
+                  echo $description
+
+                  # Write PR body to file (handle newlines properly)
+                  Set-Content -Path pr_body.txt -Value $description -Encoding UTF8
+
                   # Store PR description as a pipeline variable
                   Write-Host "##vso[task.setvariable variable=PR_BODY;isOutput=true]$description"
+          
+          # 🟢 Display PR Body (for debugging)
           - script: |
-              echo "$(SFValidate.prbody.PR_BODY)"
-            displayName: Azure DevOps PR BODY
+              echo "$(fetchPRBody.PR_BODY)"
+            displayName: GitHub Actions PR BODY
+
+          # 🟢 Extract Apex Test Classes using Python
+          - task: PythonScript@0
+            name: extractApex
+            displayName: "Extract Apex Test Classes"
+            inputs:
+              scriptSource: 'filePath'
+              scriptPath: 'PRBODY_TESTCLASS.py'
+              arguments: 'pr_body.txt'   # ✅ Pass file instead of direct text
+
+          # 🟢 Use Extracted Apex Test Classes
+          - script: |
+              echo "Extracted Apex Classes: $(extractApex.APEX_CLASSES)"
+            displayName: "Use Extracted Apex Classes"

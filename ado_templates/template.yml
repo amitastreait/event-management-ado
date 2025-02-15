@@ -45,7 +45,7 @@ jobs:
 
       - script: |
           npm install -g @salesforce/cli
-        displayName: Install Salesforce CLI if not cached
+        displayName: Install Salesforce CLI
 
       - script: sf --version
         displayName: Verify CLI Installation 
