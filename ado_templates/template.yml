@@ -35,7 +35,12 @@ jobs:
         displayName: Checkout to correct commit
 
       - script: |
-          curl -X POST -H 'Content-type: application/json' --data '{"text":"Hello, World! I coming from ADO"}' $(SLACK_WEBHOOK_URL)
+          curl X POST \
+          -H "Content-Type: application/json" \
+          --data '{
+            "text": "The Job has statted at ADO Pipeline $(Agent.JobStatus) Build Url $(Build.BuildUri) $(Build.QueuedBy) $(Build.SourceBranchName)"
+          }' \
+          $(SLACK_WEBHOOK_URL)
         displayName: Post to Slack
 
       - script: |
