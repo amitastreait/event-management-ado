@@ -69,5 +69,5 @@ stages:
                   # Store PR description as a pipeline variable
                   Write-Host "##vso[task.setvariable variable=PR_BODY;isOutput=true]$description"
           - script: |
-              echo "$(SFValidate.fetchPRBody.PR_BODY)"
+              echo "$(fetchPRBody.PR_BODY)"
             displayName: Azure DevOps PR BODY
