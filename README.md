@@ -91,6 +91,45 @@ steps:
   displayName: "PR Body"
 ```
 
+## How to Read the PR Body of GitHub Actions from ADO Pipeline
+
+```yml
+- task: PowerShell@2
+  name: fetchPRBody
+  displayName: "Fetch GitHub PR Description"
+  inputs:
+    targetType: 'inline'
+    script: |
+        # Define GitHub API URL
+        $repoOwner = "amitastreait"  # Replace with your GitHub org/user
+        $repoName = "event-management-ado"  # Replace with your repo name
+        $prNumber = "$(System.PullRequest.PullRequestId)"  #Fetch PR ID from ADO pipeline variable
+        $url = "https://api.github.com/repos/$repoOwner/$repoName/pulls/$prNumber"
+
+        # GitHub API authentication (Use GitHub PAT stored as a secret variable in ADO)
+        $headers = @{
+            Authorization = "Bearer $(GITHUB_PAT)"  # GITHUB_PAT should be stored securely in ADO
+            Accept = "application/vnd.github.v3+json"
+        }
+
+        # Fetch PR details
+        $response = Invoke-RestMethod -Uri $url -Method 'GET' -Headers $headers -ContentType "application/json"
+        
+        # Extract PR description
+        $description = $response.body  # PR description
+        
+        # Replace newlines to avoid truncation
+        $description = $description -replace "`r`n", " "  # Windows newlines
+        $description = $description -replace "`n", " "    # Unix newlines
+
+        # Store PR description as a pipeline variable
+        Write-Host "##vso[task.setvariable variable=PR_BODY;isOutput=true]$description"
+
+- script: |
+    echo "$(prbody.PR_BODY)"
+  displayName: Azure DevOps PR BODY
+```
+
 ## Salesforce DX Project: Next Steps
 
 Now that you’ve created a Salesforce DX project, what’s next? Here are some documentation resources to get you started.
