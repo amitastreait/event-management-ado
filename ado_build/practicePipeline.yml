@@ -42,7 +42,7 @@ stages:
                   $prNumber = "$(System.PullRequest.PullRequestId)"  #Fetch PR ID from ADO pipeline variable
                   echo $prNumber
                   $url = "https://api.github.com/repos/$(repoOwner)/$(repoName)/pulls/$prNumber"
-
+                  echo $url
                   # GitHub API authentication (Use GitHub PAT stored as a secret variable in ADO)
                   $headers = @{
                       Authorization = "Bearer $(GITHUB_PAT)"  # GITHUB_PAT should be stored securely in ADO
