@@ -34,4 +34,4 @@ if __name__ == "__main__":
     # Set Azure DevOps variable
     print(f"##vso[task.setvariable variable=APEX_CLASSES;isOutput=true]{result}")
 
-# python PRBODY_TESTCLASS.py "This PR contains some updates. APEX TEST CLASS TO RUN [RUN:TestClass1, TestClass2, TestClass3]"
+# python PRBODY_TESTCLASS.py "and is up to date with the latest main branch  APEX TEST CLASS TO RUN [RUN:TestClass1,TestClass2,TestClass3]"
