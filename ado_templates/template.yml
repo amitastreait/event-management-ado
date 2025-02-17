@@ -26,6 +26,7 @@ parameters:
 - name: SLACK_WEBHOOK_URL
   type: string
   default: no
+  
 
 jobs:
   - job: SFValidate
@@ -60,6 +61,68 @@ jobs:
         inputs:
           secureFile: ${{ parameters.SECURE_FILE_NAME }} # Name of the secure file
           # secureFile: ${{ parameters.SECURE_FILE_NAME }}
+      
+      # 🟢 Fetch PR Description from GitHub API
+      - task: PowerShell@2
+        name: fetchPRBody
+        displayName: "Fetch GitHub PR Description"
+        inputs:
+          targetType: 'inline'
+          script: |
+              # Get the source branch name
+              $sourceBranch = "$(Build.SourceBranch)"  # Example: "refs/pull/13/merge"
+
+              # Extract PR number using regex
+              if ($sourceBranch -match "refs/pull/(\d+)/merge") {
+                  $githubPrNumber = $matches[1]
+              } else {
+                  Write-Host "##vso[task.logissue type=error]Could not extract GitHub PR number"
+                  exit 1
+              }
+              echo $githubPrNumber
+              $url = "https://api.github.com/repos/amitastreait/event-management-ado/pulls/$githubPrNumber"
+              echo $url
+              # GitHub API authentication (Use GitHub PAT stored as a secret variable in ADO)
+              $headers = @{
+                  Authorization = "Bearer $(GITHUB_PAT)"  # GITHUB_PAT should be stored securely in ADO
+                  Accept = "application/vnd.github.v3+json"
+              }
+              # Fetch PR details
+              $response = Invoke-RestMethod -Uri $url -Method 'GET' -Headers $headers -ContentType "application/json"
+              
+              # Extract PR description
+              $description = $response.body  # PR description
+              # Replace newlines to avoid truncation
+              $description = $description -replace "`r`n", " "  # Windows newlines
+              $description = $description -replace "`n", " "    # Unix newlines
+
+              echo $description
+
+              # Write PR body to file (handle newlines properly)
+              Set-Content -Path pr_body.txt -Value $description -Encoding UTF8
+
+              # Store PR description as a pipeline variable
+              Write-Host "##vso[task.setvariable variable=PR_BODY;isOutput=true]$description"
+      
+      # 🟢 Display PR Body (for debugging)
+      - script: |
+          echo "$(fetchPRBody.PR_BODY)"
+        displayName: GitHub Actions PR BODY
+      
+      # 🟢 Extract Apex Test Classes using Python
+      - task: PythonScript@0
+        name: extractApex
+        displayName: "Extract Apex Test Classes"
+        inputs:
+          scriptSource: 'filePath'
+          scriptPath: 'PRBODY_TESTCLASS.py'
+          arguments: 'pr_body.txt'   # ✅ Pass file instead of direct text
+
+      # 🟢 Use Extracted Apex Test Classes
+      - script: |
+          echo "Extracted Apex Classes: $(extractApex.APEX_CLASSES)"
+        displayName: "Use Extracted Apex Classes"
+        
       - script: |
           sf org login jwt --jwt-key-file $(commonSecureFile.secureFilePath) --username $(SF_USER_NAME) --client-id $(SF_CLIENT_ID) --set-default --alias $(SF_ALIAS) --instance-url $(SF_INSTANCE_URL)
         displayName: Authenticate with Salesforce
