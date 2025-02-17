@@ -7,8 +7,8 @@ You can get the complete document using [Link](https://learn.microsoft.com/en-us
 
 There are two scenarios when you are using the ADO Pipelines
 
-- Using the GitHub Repo and ADO Pipeline
-- Using the Azure Repo and Azure Pipeline
+- Using the GitHub Repo and ADO Pipeline - GITHUB_PAT ( Personal Access Token )
+- Using the Azure Repo and Azure Pipeline - Access Token ( $(System.AccessToken) )
 
 Note:- There are no pipeline, build or system variables which can be used to read the PR Body. To read the PR body we need to Use the API
 
@@ -72,7 +72,7 @@ steps:
   displayName: "PR Body"
 ```
 
-### How to Read the PR Body of GitHub Actions from ADO Pipeline
+### How to Read the PR Body of GitHub PR from ADO Pipeline
 
 ```yml
 # Starter pipeline
@@ -118,9 +118,6 @@ stages:
               script: |
                   # Get the source branch name
                   $sourceBranch = "$(Build.SourceBranch)"  # Example: "refs/pull/13/merge"
-                  # Define GitHub API URL
-                  $prNumber = "$(System.PullRequest.PullRequestId)"
-                  echo $prNumber
 
                   # Extract PR number using regex
                   if ($sourceBranch -match "refs/pull/(\d+)/merge") {
@@ -132,16 +129,17 @@ stages:
                   echo $githubPrNumber
                   $url = "https://api.github.com/repos/$(repoOwner)/$(repoName)/pulls/$githubPrNumber"
                   echo $url
-                  # GitHub API authentication (Use GitHub PAT stored as a secret variable in ADO)
+                # GitHub API authentication (Use GitHub PAT stored as a secret variable in ADO)
                   $headers = @{
                       Authorization = "Bearer $(GITHUB_PAT)"  # GITHUB_PAT should be stored securely in ADO
                       Accept = "application/vnd.github.v3+json"
                   }
-                  # Fetch PR details
+                # Fetch PR details
                   $response = Invoke-RestMethod -Uri $url -Method 'GET' -Headers $headers -ContentType "application/json"
-                  # Extract PR description
+                 
+                # Extract PR description
                   $description = $response.body  # PR description
-                  # Replace newlines to avoid truncation
+                # Replace newlines to avoid truncation
                   $description = $description -replace "`r`n", " "  # Windows newlines
                   $description = $description -replace "`n", " "    # Unix newlines
 
@@ -215,6 +213,79 @@ if __name__ == "__main__":
 
     # Set Azure DevOps variable
     print(f"##vso[task.setvariable variable=APEX_CLASSES;isOutput=true]{result}")
+```
+
+#### Complete Code for the ADO Pipeline
+
+```yml
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger: none
+
+pr:
+ branches:
+   include:
+     - main
+     - master
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- script: echo Hello, world!
+  displayName: 'Run a one-line script'
+
+- script: |
+    echo Add other tasks to build, test, and deploy your project.
+    echo See https://aka.ms/yaml
+  displayName: 'Run a multi-line script'
+  
+- task: PowerShell@2
+  name: prbody
+  displayName: "Read PR description"
+  inputs:
+    targetType: 'inline'
+    script: |
+
+      # Call the Azure DevOps Services Rest API.
+      $url = "$($env:SYSTEM_TEAMFOUNDATIONCOLLECTIONURI)$env:SYSTEM_TEAMPROJECTID/_apis/git/repositories/$(Build.Repository.ID)/pullRequests/$(System.PullRequest.PullRequestId)?api-version=7.0"
+      $headers = @{
+        Authorization = "Bearer $(System.AccessToken)"
+      }
+      $pullRequestInfo = Invoke-RestMethod -Uri $url -Method 'GET' -ContentType 'application/json' -Headers $headers
+
+      # Get PR description from the json response.
+      $json = $($pullRequestInfo | ConvertTo-Json -Depth 100 | ConvertFrom-Json)
+      $description = $json.description
+
+      # Replace newlines with a placeholder (e.g., `__NEWLINE__`)
+      $description = $description -replace "`r`n", " "  # Windows newlines
+      $description = $description -replace "`n", " "    # Unix newlines
+
+      # echo "##vso[task.setvariable variable=PR_BODY;isOutput=true]$description"
+      Write-Host "##vso[task.setvariable variable=PR_BODY;isOutput=true]$description"
+      # Write PR body to file (handle newlines properly)
+      Set-Content -Path pr_body.txt -Value $description -Encoding UTF8
+
+- script: |
+    echo "$(prbody.PR_BODY)"
+  displayName: Azure DevOps PR BODY
+
+- task: PythonScript@0
+  name: extractedApexClass
+  displayName: Extract the Apex Test Class from PR Body
+  inputs:
+    scriptSource: 'filePath'
+    scriptPath: 'PRBODY_TESTCLASS.py'
+    arguments: 'pr_body.txt'
+  
+- script: |
+    echo "$(extractedApexClass.APEX_CLASSES)"
+  displayName: GitHub PR BODY
+
 ```
 
 ## Required steps to setup Self-Hoted Runner

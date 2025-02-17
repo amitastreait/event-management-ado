@@ -10,11 +10,8 @@ export function reduceErrors(errors) {
 
     return (
         errors
-            // Remove null/undefined items
             .filter((error) => !!error)
-            // Extract an error message
             .map((error) => {
-                // UI API read errors
                 if (Array.isArray(error.body)) {
                     return error.body.map((e) => e.message);
                 }
