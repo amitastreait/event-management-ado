@@ -54,4 +54,5 @@ export default class AddressForm extends LightningElement {
             );
         }
     }
+    /** Added the simple method */
 }
