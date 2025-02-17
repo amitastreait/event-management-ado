@@ -215,6 +215,79 @@ if __name__ == "__main__":
     print(f"##vso[task.setvariable variable=APEX_CLASSES;isOutput=true]{result}")
 ```
 
+#### Complete Code for the ADO Pipeline
+
+```yml
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger: none
+
+pr:
+ branches:
+   include:
+     - main
+     - master
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- script: echo Hello, world!
+  displayName: 'Run a one-line script'
+
+- script: |
+    echo Add other tasks to build, test, and deploy your project.
+    echo See https://aka.ms/yaml
+  displayName: 'Run a multi-line script'
+  
+- task: PowerShell@2
+  name: prbody
+  displayName: "Read PR description"
+  inputs:
+    targetType: 'inline'
+    script: |
+
+      # Call the Azure DevOps Services Rest API.
+      $url = "$($env:SYSTEM_TEAMFOUNDATIONCOLLECTIONURI)$env:SYSTEM_TEAMPROJECTID/_apis/git/repositories/$(Build.Repository.ID)/pullRequests/$(System.PullRequest.PullRequestId)?api-version=7.0"
+      $headers = @{
+        Authorization = "Bearer $(System.AccessToken)"
+      }
+      $pullRequestInfo = Invoke-RestMethod -Uri $url -Method 'GET' -ContentType 'application/json' -Headers $headers
+
+      # Get PR description from the json response.
+      $json = $($pullRequestInfo | ConvertTo-Json -Depth 100 | ConvertFrom-Json)
+      $description = $json.description
+
+      # Replace newlines with a placeholder (e.g., `__NEWLINE__`)
+      $description = $description -replace "`r`n", " "  # Windows newlines
+      $description = $description -replace "`n", " "    # Unix newlines
+
+      # echo "##vso[task.setvariable variable=PR_BODY;isOutput=true]$description"
+      Write-Host "##vso[task.setvariable variable=PR_BODY;isOutput=true]$description"
+      # Write PR body to file (handle newlines properly)
+      Set-Content -Path pr_body.txt -Value $description -Encoding UTF8
+
+- script: |
+    echo "$(prbody.PR_BODY)"
+  displayName: Azure DevOps PR BODY
+
+- task: PythonScript@0
+  name: extractedApexClass
+  displayName: Extract the Apex Test Class from PR Body
+  inputs:
+    scriptSource: 'filePath'
+    scriptPath: 'PRBODY_TESTCLASS.py'
+    arguments: 'pr_body.txt'
+  
+- script: |
+    echo "$(extractedApexClass.APEX_CLASSES)"
+  displayName: GitHub PR BODY
+
+```
+
 ## Required steps to setup Self-Hoted Runner
 
 1. Download the Runner using [ADO Official Link](https://vstsagentpackage.azureedge.net/agent/4.251.0/vsts-agent-linux-x64-4.251.0.tar.gz)
