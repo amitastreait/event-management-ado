@@ -26,6 +26,10 @@ parameters:
 - name: SLACK_WEBHOOK_URL
   type: string
   default: no
+- name: GITHUB_PAT
+  type: string
+  default: no
+  displayName: GitHub Personal Access Token
   
 
 jobs:
