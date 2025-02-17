@@ -194,7 +194,17 @@ jobs:
             echo "---- No changes to validate ----"
           fi
         displayName: Validate the changes
-        condition: eq( '${{ parameters.PR_MERGED }}', 'false' )
+        condition: and(eq('$(extractApex.APEX_CLASSES)', 'No Apex classes found') , eq( '${{ parameters.PR_MERGED }}', 'false' ))
+
+      - script: |
+          if grep -q '<types>' delta/package/package.xml ; then
+            echo "---- Deploying added and modified metadata ----"
+            sf project deploy start --target-org $(SF_ALIAS) --test-level RunSpecifiedTests  --tests $(extractApex.APEX_CLASSES) --manifest delta/package/package.xml --dry-run --wait 15
+          else
+            echo "---- No changes to validate ----"
+          fi
+        displayName: Validate the changes With Specified Test Classes
+        condition: and(ne('$(extractApex.APEX_CLASSES)', 'No Apex classes found') , eq( '${{ parameters.PR_MERGED }}', 'false' ))
       
       - script: |
           if grep -q '<types>' delta/destructiveChanges/destructiveChanges.xml ; then
