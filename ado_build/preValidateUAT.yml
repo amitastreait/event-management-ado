@@ -11,7 +11,7 @@ pr:
      - force-app/*
 
 pool:
-  name: DevSecOps # Provide the name of your self hosted runner
+  name: devsecops # Provide the name of your self hosted runner
   # vmImage: ubuntu-latest # use this only when you are using Microsoft Hosted Runners
 
 variables:
