@@ -1,0 +1,23 @@
+<!--
+  @description       : 
+  @author            : Amit Singh
+  @group             : 
+  @last modified on  : 01-07-2025
+  @last modified by  : Amit Singh
+-->
+<template>
+    <lightning-spinner alternative-text="Loading" size="small" variant="brand" if:true={isLoading}></lightning-spinner>
+    <lightning-card  variant="Narrow" title="Invoice PDF" icon-name="doctype:pdf">
+        <div class="slds-p-around_small" if:true={recordId}>
+            <!-- Add the Iframe to show the Invoice PDF -->
+            <iframe src={pdfUrl} width="100%" height="600px" frameborder="0"></iframe>
+        </div>
+        <div class=" bottom-center-button slds-p-around_small" if:true={recordId}>
+            <lightning-button label="Cancel" onclick={close} ></lightning-button>
+            &nbsp;&nbsp;
+            <lightning-button label="Save PDF" onclick={savePdf} variant="brand"></lightning-button>
+            &nbsp;&nbsp;
+            <lightning-button label="Save and Email" onclick={saveAndEmail} variant="brand"></lightning-button>
+        </div>
+    </lightning-card>
+</template>

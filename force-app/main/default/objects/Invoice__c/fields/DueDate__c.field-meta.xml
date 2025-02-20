@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>DueDate__c</fullName>
+    <defaultValue>TODAY() + 7</defaultValue>
+    <inlineHelpText>Due date for the customer/sponsor to pay the amount. Default is Invoice created date + 7</inlineHelpText>
+    <label>Due Date</label>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Date</type>
+</CustomField>

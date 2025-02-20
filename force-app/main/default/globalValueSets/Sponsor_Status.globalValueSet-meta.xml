@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GlobalValueSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customValue>
+        <fullName>New</fullName>
+        <default>true</default>
+        <label>New</label>
+    </customValue>
+    <customValue>
+        <fullName>Documents Pending</fullName>
+        <default>false</default>
+        <label>Documents Pending</label>
+    </customValue>
+    <customValue>
+        <fullName>Legal Work Pending</fullName>
+        <default>false</default>
+        <label>Legal Work Pending</label>
+    </customValue>
+    <customValue>
+        <fullName>Invoice Generated</fullName>
+        <default>false</default>
+        <label>Invoice Generated</label>
+    </customValue>
+    <customValue>
+        <fullName>Invoice Sent</fullName>
+        <default>false</default>
+        <label>Invoice Sent</label>
+    </customValue>
+    <customValue>
+        <fullName>Invoice Paid</fullName>
+        <default>false</default>
+        <label>Invoice Paid</label>
+    </customValue>
+    <customValue>
+        <fullName>Onboarded</fullName>
+        <default>false</default>
+        <label>Onboarded</label>
+    </customValue>
+    <customValue>
+        <fullName>Lost</fullName>
+        <default>false</default>
+        <label>Lost</label>
+    </customValue>
+    <customValue>
+        <fullName>Cancelled</fullName>
+        <default>false</default>
+        <label>Cancelled</label>
+    </customValue>
+    <masterLabel>Sponsor Status</masterLabel>
+    <sorted>false</sorted>
+</GlobalValueSet>

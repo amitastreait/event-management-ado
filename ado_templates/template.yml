@@ -1,0 +1,246 @@
+parameters:
+- name: SF_USER_NAME
+  type: string
+  default: null
+- name: SF_ALIAS
+  type: string
+  default: null
+- name: SF_CLIENT_ID
+  type: string
+  default: null
+- name: SF_INSTANCE_URL
+  type: string
+  default: null
+- name: SECURE_FILE_NAME
+  type: string
+  default: 'server.key'
+- name: PR_MERGED
+  type: boolean
+  default: false
+- name: BY_PASS_CODE_COVERAGE
+  type: string
+  default: no
+- name: BY_PASS_CODE_SCANNER
+  type: string
+  default: no
+- name: SLACK_WEBHOOK_URL
+  type: string
+  default: no
+- name: GITHUB_PAT
+  type: string
+  default: no
+  displayName: GitHub Personal Access Token
+  
+
+jobs:
+  - job: SFValidate
+    steps:
+      - checkout: self
+        fetchDepth: 0
+        displayName: Checkout to correct commit
+
+      - script: |
+          curl X POST \
+          -H "Content-Type: application/json" \
+          --data '{
+            "text": "The Job has statted at ADO Pipeline $(Agent.JobStatus) Build Url $(Build.BuildUri) $(Build.QueuedBy) $(Build.SourceBranchName)"
+          }' \
+          $(SLACK_WEBHOOK_URL)
+        displayName: Post to Slack
+
+      - script: |
+          npm install -g @salesforce/cli
+        displayName: Install Salesforce CLI
+
+      - script: sf --version
+        displayName: Verify CLI Installation 
+      - script: |
+          echo 'y' | sf plugins install sfdx-git-delta
+          sf plugins install @salesforce/sfdx-scanner
+        displayName: Install Required Plugins
+      # Download the Secure File
+      - task: DownloadSecureFile@1
+        name: commonSecureFile
+        displayName: Download Secure File
+        inputs:
+          secureFile: ${{ parameters.SECURE_FILE_NAME }} # Name of the secure file
+          # secureFile: ${{ parameters.SECURE_FILE_NAME }}
+      
+      # 🟢 Fetch PR Description from GitHub API
+      - task: PowerShell@2
+        name: fetchPRBody
+        displayName: "Fetch GitHub PR Description"
+        inputs:
+          targetType: 'inline'
+          script: |
+              # Get the source branch name
+              $sourceBranch = "$(Build.SourceBranch)"  # Example: "refs/pull/13/merge"
+
+              # Extract PR number using regex
+              if ($sourceBranch -match "refs/pull/(\d+)/merge") {
+                  $githubPrNumber = $matches[1]
+              } else {
+                  Write-Host "##vso[task.logissue type=error]Could not extract GitHub PR number"
+                  exit 1
+              }
+              echo $githubPrNumber
+              $url = "https://api.github.com/repos/amitastreait/event-management-ado/pulls/$githubPrNumber"
+              echo $url
+              # GitHub API authentication (Use GitHub PAT stored as a secret variable in ADO)
+              $headers = @{
+                  Authorization = "Bearer $(GITHUB_PAT)"  # GITHUB_PAT should be stored securely in ADO
+                  Accept = "application/vnd.github.v3+json"
+              }
+              # Fetch PR details
+              $response = Invoke-RestMethod -Uri $url -Method 'GET' -Headers $headers -ContentType "application/json"
+              
+              # Extract PR description
+              $description = $response.body  # PR description
+              # Replace newlines to avoid truncation
+              $description = $description -replace "`r`n", " "  # Windows newlines
+              $description = $description -replace "`n", " "    # Unix newlines
+
+              echo $description
+
+              # Write PR body to file (handle newlines properly)
+              Set-Content -Path pr_body.txt -Value $description -Encoding UTF8
+
+              # Store PR description as a pipeline variable
+              Write-Host "##vso[task.setvariable variable=PR_BODY;isOutput=true]$description"
+      
+      # 🟢 Display PR Body (for debugging)
+      - script: |
+          echo "$(fetchPRBody.PR_BODY)"
+        displayName: GitHub Actions PR BODY
+      
+      # 🟢 Extract Apex Test Classes using Python
+      - task: PythonScript@0
+        name: extractApex
+        displayName: "Extract Apex Test Classes"
+        inputs:
+          scriptSource: 'filePath'
+          scriptPath: 'PRBODY_TESTCLASS.py'
+          arguments: 'pr_body.txt'   # ✅ Pass file instead of direct text
+
+      # 🟢 Use Extracted Apex Test Classes
+      - script: |
+          echo "Extracted Apex Classes: $(extractApex.APEX_CLASSES)"
+        displayName: "Use Extracted Apex Classes"
+        
+      - script: |
+          sf org login jwt --jwt-key-file $(commonSecureFile.secureFilePath) --username $(SF_USER_NAME) --client-id $(SF_CLIENT_ID) --set-default --alias $(SF_ALIAS) --instance-url $(SF_INSTANCE_URL)
+        displayName: Authenticate with Salesforce
+      - script: |
+          sf apex run test --target-org $(SF_ALIAS) --test-level RunLocalTests --code-coverage --result-format human -d ./ --wait 10
+        displayName: Run Local Tests
+        
+      # Run Python file to get the code coverage CODE_COVERAGE.py
+      - task: PythonScript@0
+        inputs:
+          scriptSource: 'filePath'
+          scriptPath: 'CODE_COVERAGE.py'
+        displayName: Run Code Coverage Check
+        condition: eq('${{ parameters.BY_PASS_CODE_COVERAGE }}', 'yes')
+
+      # Salesforce Code analyzer
+      - script: |
+          mkdir scanner_reports
+          sf scanner run --format html --target "force-app/main/default" --engine eslint,eslint-lwc,eslint-typescript,pmd,retire-js,cpd --category Design,Best Practices,Code Style,Performance,Security --outfile scanner_reports/scanner_reports.html
+        displayName: Run Salesforce Code analyzer
+      # upload as an artifacts
+
+      #1 Build Artifacts
+      - task: PublishBuildArtifacts@1
+        inputs:
+          PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+          ArtifactName: 'My First Pipeline'
+          publishLocation: 'Container'
+          StoreAsTar: true
+        displayName: Publish Build Artifacts
+      #2 Pipeline Artifacts
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: '$(System.DefaultWorkingDirectory)/scanner_reports'
+          artifact: 'SF_CLI_REPORTS'
+          publishLocation: 'pipeline'
+        displayName: Publish SF CLI Scanner Reports
+
+      # Generate the Delta for Delta Deployment
+      - script: |
+          mkdir delta
+          # Generate Delta for deployment
+          # https://github.com/scolladon/sfdx-git-delta
+          sf sgd source delta --to "HEAD" --from "HEAD~1" --output-dir ./delta --generate-delta --ignore-whitespace --ignore-file .sgdignore
+          cat ./delta/package/package.xml
+          cat ./delta/destructiveChanges/destructiveChanges.xml
+          ls -l ./delta
+        displayName: Generate Delta for the Deployment
+      
+      - script: |
+          if grep -q '<types>' delta/destructiveChanges/destructiveChanges.xml ; then
+            echo "---- Validate Pre-Destructive Changes in Salesforce ----"
+            sf project deploy start --target-org $(SF_ALIAS) --pre-destructive-changes delta/destructiveChanges/destructiveChanges.xml --manifest delta/destructiveChanges/package.xml --dry-run --wait 15
+          else
+            echo "---- No changes to validate ----"
+          fi
+        displayName: Validate Pre-Destructive Changes in Salesforce
+        condition: eq( '${{ parameters.PR_MERGED }}', 'false' )
+
+      - script: |
+          if grep -q '<types>' delta/package/package.xml ; then
+            echo "---- Deploying added and modified metadata ----"
+            sf project deploy start --target-org $(SF_ALIAS) --manifest delta/package/package.xml --dry-run --wait 15
+          else
+            echo "---- No changes to validate ----"
+          fi
+        displayName: Validate the changes
+        condition: and(eq('$(extractApex.APEX_CLASSES)', 'No Apex classes found') , eq( '${{ parameters.PR_MERGED }}', 'false' ))
+
+      - script: |
+          if grep -q '<types>' delta/package/package.xml ; then
+            echo "---- Deploying added and modified metadata ----"
+            sf project deploy start --target-org $(SF_ALIAS) --test-level RunSpecifiedTests  --tests $(extractApex.APEX_CLASSES) --manifest delta/package/package.xml --dry-run --wait 15
+          else
+            echo "---- No changes to validate ----"
+          fi
+        displayName: Validate the changes With Specified Test Classes
+        condition: and(ne('$(extractApex.APEX_CLASSES)', 'No Apex classes found') , eq( '${{ parameters.PR_MERGED }}', 'false' ))
+      
+      - script: |
+          if grep -q '<types>' delta/destructiveChanges/destructiveChanges.xml ; then
+            echo "---- Validate Pre-Destructive Changes in Salesforce ----"
+            sf project deploy start --target-org $(SF_ALIAS) --pre-destructive-changes delta/destructiveChanges/destructiveChanges.xml --manifest delta/destructiveChanges/package.xml --wait 15
+          else
+            echo "---- No changes to deploy ----"
+          fi
+        displayName: Deploy Pre-Destructive Changes in Salesforce
+        condition: eq( '${{ parameters.PR_MERGED }}', 'true' )
+
+      - script: |
+          if grep -q '<types>' delta/package/package.xml ; then
+            echo "---- Deploying added and modified metadata ----"
+            sf project deploy start --target-org $(SF_ALIAS) --manifest delta/package/package.xml --wait 15
+          else
+            echo "---- No changes to deploy ----"
+          fi
+        displayName: Deploy the changes
+        condition: eq( '${{ parameters.PR_MERGED }}', 'true' )
+        
+      - script: |
+          if grep -q '<types>' destructiveChanges/postDestructiveChanges.xml ; then
+            echo "---- Deploy Pre-Destructive Changes in Salesforce ----"
+            sf project deploy start --target-org $(SF_ALIAS) --post-destructive-changes destructiveChanges/postDestructiveChanges.xml --manifest destructiveChanges/package.xml --wait 15
+          else
+            echo "---- No changes to deploy ----"
+          fi
+        displayName: Deploy Post-Destructive Changes in Salesforce
+        condition: eq( '${{ parameters.PR_MERGED }}', 'true' )
+
+  - job: SFDeploy
+    steps:
+      - script: echo "SFBuild is running"
+        displayName: Single Line Script
+      - script: |
+          echo "Multiple line 1"
+          echo "Multiple line 2"
+        displayName: MultiLine Script

@@ -1,0 +1,34 @@
+trigger: none
+
+# Pull Request Trigger
+pr: 
+ branches:
+   include:
+     - sit
+     - SIT
+ paths:
+   include:
+     - force-app/*
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  - group: salesforce-sit-org
+
+stages:
+  - stage: SFDeployANDValidate
+    jobs:
+      - job: SFDeployANDValidate
+      - template: ../ado_templates/template.yml
+        parameters:
+          SF_USER_NAME: $(SF_USER_NAME)
+          SF_ALIAS: $(SF_ALIAS)
+          SF_CLIENT_ID: $(SF_CLIENT_ID)
+          SF_INSTANCE_URL: $(SF_INSTANCE_URL)
+          SECURE_FILE_NAME: 'server-sit.key'
+          PR_MERGED: false
+          BY_PASS_CODE_COVERAGE: $(BY_PASS_CODE_COVERAGE)
+          BY_PASS_CODE_SCANNER: $(BY_PASS_CODE_SCANNER)
+          SLACK_WEBHOOK_URL: $(SLACK_WEBHOOK_URL)
+          GITHUB_PAT: $(GITHUB_PAT)
