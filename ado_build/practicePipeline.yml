@@ -32,6 +32,21 @@ stages:
             fetchDepth: 0
             displayName: Checkout to correct commit
 
+          # PREREQUISITES - Only needed if runner doesn't already satisfy these requirements
+          - name: Ensure node v20 or greater
+            uses: actions/setup-node@v4
+            with:
+              node-version: '>=20'
+          - name: Ensure java v11 or greater
+            uses: actions/setup-java@v4
+            with:
+              java-version: '>=11'
+              distribution: 'zulu'
+          - name: Ensure python v3.10 or greater
+            uses: actions/setup-python@v5
+            with:
+              python-version: '>=3.10'
+
           # 🟢 Fetch PR Description from GitHub API
           - task: PowerShell@2
             name: fetchPRBody
