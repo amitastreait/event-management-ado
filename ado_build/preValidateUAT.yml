@@ -21,6 +21,8 @@ stages:
   - stage: SFDeployANDValidate
     jobs:
       - job: SFDeployANDValidate
+        pool:
+          vmImage: windows-latest
       - template: ../ado_templates/template.yml
         parameters:
           SF_USER_NAME: $(SF_USER_NAME)
